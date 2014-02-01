@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>halp</title>
+		<script src="generatepng.js"></script>
+		<script src="rainbow_ball.js"></script>
+		<script src="webtoolkit.base64.js"></script>
+		<script src="jquery-2.1.0.min.js"></script>
+
+<style type="text/css">
+img {
+	margin:1px;
+}
+body {
+}
+#ballpen {
+	display:inline-block;
+}
+#ballpentext {
+	font-family: monospace;
+	z-index:3;
+	width:150px;
+	margin-top:-100px;
+}
+div.tileRow {
+  height:40px;
+}
+div.tile {
+  z-index:1;
+  width:40px;
+  height:40px;
+  background-image: url("default-skin.png"); 
+  display:inline-block;
+}
+div.tileBackground {
+  z-index:1;
+  width:40px;
+  height:40px;
+  background-image: url("default-skin.png"); 
+  display:inline-block;
+  background-position: -80px -80px;
+}
+</style>
+</head>
+<body>
+<div id="ballpen"></div>
+
+<div id='palette'>
+  
+</div>
+
+
+
+<div style='height:30em;overflow:scroll' id='map'>
+
+
+
+</div>
+
+<input type='button' value='Export!' id='export' />
+
+<!-- id='logic' value='{ "info": { "name": "Test", "author": "Peter" }}' /-->
+
+<script>
+$(function() {
+  var tileSize = 40;
+  function TileType(name, sheetX, sheetY, r,g,b, extra) {
+    this.name = name;
+    this.sheetX = sheetX;
+    this.sheetY = sheetY;
+    this.color = String.fromCharCode(r)+String.fromCharCode(g)+String.fromCharCode(b)+String.fromCharCode(255);
+    this.postPlaceFn = extra&&extra.postPlaceFn;
+  }
+  TileType.prototype.positionCss = function() {
+    return -this.sheetX*tileSize + 'px ' + -this.sheetY*tileSize + 'px';
+  }
+  TileType.prototype.drawOn = function($elem) {
+    $elem.css('background-color', this.name == 'empty' ? 'black' : '');
+    $elem.css('background-position', this.positionCss())
+  }
+
+  function ensureUnique(placedX, placedY) {
+    for (var x=0; x<width; x++) {
+      for (var y=0; y<height; y++) {
+        if (x==placedX && y==placedY) continue;
+        if (tiles[x][y].type == this) {
+          tiles[x][y].setType(floorType);
+        }
+      }
+    }
+  }
+  
+  var floorType, blueFlagType, redFlagType;
+  var tileTypes = [
+    floorType=new TileType('floor', 2,2, 212,212,212),
+    new TileType('empty', 0,1, 0,0,0),
+    new TileType('wall', 0,0, 120,120,120),
+    new TileType('switch', 2,5, 185,122,87),
+    new TileType('spike', 2,3, 55,55,55),
+    new TileType('powerup', 7,8, 0,255,0),
+    new TileType('openField', 10,1, 0,128,0),
+    new TileType('closedField', 10,2, 0,128,0),
+    new TileType('redField', 10,3, 0,128,0),
+    new TileType('blueField', 10,4, 0,128,0),
+    redFlagType = new TileType('redFlag', 8,0, 255,0,0),
+    blueFlagType = new TileType('blueFlag', 9,0, 0,0,255)
+  ]
+
+  function Tile() {
+    
+  }
+  Tile.prototype.setType = function(type) {
+    this.type = type;
+    type.drawOn(this.elem);
+    if (type.postPlaceFn) {
+      type.postPlaceFn.call(type, this.x, this.y);
+    }
+  }
+
+  var $map = $('#map');
+  var $palette = $('#palette');
+  var height = 20;
+  var width = 10;
+  var html = '';
+  var row = "<div class='tileRow'>";
+  
+  var brushTileType = tileTypes[0];
+  
+  for (var x=0; x<width; x++) {
+    row += "<div class='tileBackground'><div class='tile'></div></div>";
+  }
+  row += "</div>"
+  for (var y=0; y<height; y++) {
+    html += row;
+  }
+  console.log(row)
+  $map.html( html );
+  
+  var $tiles = $map.find('.tile');
+  var tiles = [];
+  
+  for (var x=0; x<width; x++) {
+    tiles[x] = [];
+    for (var y=0; y<height; y++) {
+      var $tile = $($tiles[y*width + x]).data('x', x).data('y', y);
+      tiles[x][y] = new Tile();
+      tiles[x][y].elem = $tile;
+      tiles[x][y].type = brushTileType;
+      tiles[x][y].x = x;
+      tiles[x][y].y = y;
+      brushTileType.drawOn($tile);
+    }
+  }
+  
+  var activeTool = null;
+  var selectedTool = function(x,y) {
+    tiles[x][y].setType(brushTileType);
+  }
+  
+  $map.on('mousedown', '.tile', function(e) {
+    activeTool = selectedTool;
+    var x = $(this).data('x');
+    var y = $(this).data('y');
+    activeTool(x,y);
+    e.preventDefault();
+  })
+  .on('mousemove', '.tile', function() {
+    console.log(activeTool);
+    if (activeTool) {
+      console.log(this);
+      var x = $(this).data('x');
+      var y = $(this).data('y');
+      activeTool(x,y);
+    }
+  })
+  .on('mouseup', '.tile', function() {
+    console.log('up');
+    activeTool = null;
+  });
+  
+  var wall = String.fromCharCode(120)+String.fromCharCode(120)+String.fromCharCode(120)+String.fromCharCode(255);
+  var open = String.fromCharCode(212)+String.fromCharCode(212)+String.fromCharCode(212)+String.fromCharCode(255);
+  function createPng() {
+    var text = '';
+    for (var y=0; y<height; y++) {
+      for (var x=0; x<width; x++) {
+        text += tiles[x][y].type.color;
+      }
+    }
+    return text;
+  }
+  
+  $('#export').click(function() {
+    console.log('exporting')
+    var 
+      pngData,
+      pngFile,
+      base64png,
+      dataUrl = 'data:image/png;base64,',
+      img,
+      ballpen;
+
+    pngData	= createPng();
+    pngFile = generatePng(width, height, pngData);
+
+    base64png = Base64.encode(pngFile);
+    dataUrl += base64png;
+
+    img = document.createElement("img");
+    img.src = dataUrl;
+    img.style.float = "left";
+    img.style.left = "0";
+    img.style.top = "0";
+    img.style.zIndex = "2";
+    ballpen = document.getElementById("ballpen");
+    ballpen.insertBefore(img, ballpen.firstChild);
+    
+  });
+  
+  
+  $.each(tileTypes, function(idx, type) {
+    var $button = $("<div class='tileBackground'><div class='tile'></div></div>");
+    type.drawOn($button.find('.tile'));
+    $button.click('click', function() {
+      brushTileType = type;
+      console.log('sel', type);
+      
+    });
+    $palette.append($button);
+  });
+});
+</script>
+</body></html>
