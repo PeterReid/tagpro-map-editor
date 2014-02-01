@@ -49,6 +49,7 @@ div.tileBackground {
   
 </div>
 <a href='#' id='toolPencil'>Pencil</a>
+<a href='#' id='toolBrush'>Brush</a>
 <a href='#' id='toolWire'>Wire</a>
 
 <div style='height:30em;overflow:scroll' id='map'>
@@ -85,6 +86,26 @@ $(function() {
     this.drag = drag;
     this.up = up;
   }
+  var pencil = new Tool(function() {
+    }, function(x,y) {
+      tiles[x][y].setType(brushTileType);
+    }, function() {
+    });
+  var brush = new Tool(function() {
+    }, function(x,y) {
+      for (var ix=x-1; ix<=x+1; ix++) {
+        for (var iy=y-1; iy<=y+1; iy++) {
+          if (ix>=0 && iy>=0 && ix<width && iy<height) {
+            tiles[ix][iy].setType(brushTileType);
+          }
+        }
+      }
+      
+    }, function() {
+    });
+  
+  
+  
 
   function ensureUnique(placedX, placedY) {
     for (var x=0; x<width; x++) {
@@ -129,6 +150,7 @@ $(function() {
     
   }
   Tile.prototype.setType = function(type) {
+    if  (this.type==type) return;
     this.type = type;
     type.drawOn(this.elem);
     if (type.postPlaceFn) {
@@ -171,32 +193,28 @@ $(function() {
     }
   }
   
-  var activeTool = null;
-  var selectedTool = function(x,y) {
-    tiles[x][y].setType(brushTileType);
-  }
+  var selectedTool = pencil;
   
+  var mouseDown = false;
   $map.on('mousedown', '.tile', function(e) {
     if (event.which==1) {
-      activeTool = selectedTool;
+      mouseDown = true;
       var x = $(this).data('x');
       var y = $(this).data('y');
-      activeTool(x,y);
+      selectedTool.drag.call(selectedTool, x,y);
       e.preventDefault();
     }
   })
   .on('mousemove', '.tile', function() {
-    console.log(activeTool);
-    if (activeTool) {
-      console.log(this);
+    if (mouseDown) {
       var x = $(this).data('x');
       var y = $(this).data('y');
-      activeTool(x,y);
+      selectedTool.drag.call(selectedTool, x,y);
     }
   })
   .on('mouseup', '.tile', function() {
     if (event.which==1) {
-      activeTool = null;
+      mouseDown = false;
     }
   });
   
@@ -273,6 +291,16 @@ $(function() {
       
     });
     $palette.append($button);
+  });
+  
+  $('#toolPencil').click(function() {
+    selectedTool = pencil;
+  });
+  $('#toolBrush').click(function() {
+    selectedTool = brush;
+  });
+  $('#toolWire').click(function() {
+    selectedTool = wire;
   });
 });
 </script>
