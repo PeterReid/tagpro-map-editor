@@ -97,34 +97,43 @@ $(function() {
   var wire = new Tool({
     unselect: function() {
       clearHighlights();
+      this.selectedSwitch = null;
     },
     down: function(x,y) {
       var tile = tiles[x][y];
-      if (tile.type == switchType) {
-        console.log('selected a switch')
+      if (tile.type == portalType) {
+        clearHighlights();
+        if (this.selectedSwitch && this.selectedSwitch.type == portalType) { 
+          this.selectedSwitch.destination = tile;
+          this.selectedSwitch = null;
+        } else {
+          this.selectedSwitch = tile;
+          tile.highlight(true);
+          if (tile.destination) {
+            tile.destination.highlight(true);
+          }
+        }
+      } else if (tile.type == switchType) {
         this.selectedSwitch = tile;
         clearHighlights();
         tile.highlight(true);
         
         var sel = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
         for (var key in sel) {
-          var coords = sel[key];
-          tiles[coords[0]][coords[1]].highlight(true);
+          sel[key].highlight(true);
         }
-      } else {
-        if (this.selectedSwitch) {
-          var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
-          var key = x + ',' + y;
-          if (affected[key]) {
-            console.log('unselected');
-            delete affected[key]
-            tile.highlight(false);
-            console.log('unselected', affected);
-          } else {
-            affected[key] = [x,y];
-            tile.highlight(true);
-            console.log('selected', affected);
-          }
+      } else if (this.selectedSwitch && this.selectedSwitch.type == switchType) {
+        var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
+        var key = x + ',' + y;
+        if (affected[key]) {
+          console.log('unselected');
+          delete affected[key]
+          tile.highlight(false);
+          console.log('unselected', affected);
+        } else {
+          affected[key] = tile;
+          tile.highlight(true);
+          console.log('selected', affected);
         }
       }
     }
@@ -153,25 +162,25 @@ $(function() {
   }
   
   function exportSwitch(logic, tile) {
-    if (tile.type == switchType) {
-      var toggles = [];
-      console.log(tile.affected);
-      for (var key in tile.affected) {
-        var coord = tile.affected[key];
-        console.log(coord);
-        var affectedTile = tiles[coord[0]][coord[1]];
-        var t = affectedTile.type;
-        console.log(affectedTile, t);
-        if (t==bombType || t==onFieldType || t==offFieldType || t==redFieldType || t.type==blueFieldType) {
-          toggles.push({pos: {x: affectedTile.x, y: affectedTile.y}});
-          console.log(toggles);
-        }
+    var toggles = [];
+    console.log(tile.affected);
+    for (var key in tile.affected) {
+      var affectedTile = tile.affected[key];
+      var t = affectedTile.type;
+      console.log(affectedTile, t);
+      if (t==bombType || t==onFieldType || t==offFieldType || t==redFieldType || t.type==blueFieldType) {
+        toggles.push({pos: {x: affectedTile.x, y: affectedTile.y}});
+        console.log(toggles);
       }
-      logic.switches[tile.x + ',' + tile.y] = {toggle: toggles};
     }
+    logic.switches[tile.x + ',' + tile.y] = {toggle: toggles};
+  }
+  function exportPortal(logic, tile) {
+    var dest = tile.destination || tile;
+    logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
   }
   
-  var floorType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType;
+  var floorType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType, portalType;
   var tileTypes = [
     floorType = new TileType('floor', 2,2, 212,212,212),
     new TileType('empty', 0,1, 0,0,0),
@@ -188,8 +197,8 @@ $(function() {
     offFieldType = new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
     onFieldType = new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
     redFieldType = new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
-    blueFieldType= new TileType('blueField', 10,4, 0,117 ,0, {logicFn: setFieldFn('blue')}),
-    new TileType('portal', 0,0, 202, 192, 0, {image: 'portal'}),
+    blueFieldType = new TileType('blueField', 10,4, 0,117 ,0, {logicFn: setFieldFn('blue')}),
+    portalType = new TileType('portal', 0,0, 202, 192, 0, {image: 'portal', logicFn: exportPortal}),
     redFlagType = new TileType('redFlag', 8,0, 255,0,0),
     blueFlagType = new TileType('blueFlag', 9,0, 0,0,255)
   ]
@@ -289,7 +298,8 @@ $(function() {
         author: 'Anonymous'
       },
       switches: {},
-      fields: {}
+      fields: {},
+      portals: {}
     };
       
     for (var x=0; x<width; x++) {
