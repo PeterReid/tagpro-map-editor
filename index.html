@@ -30,11 +30,22 @@ div.selectionIndicator {
   background-image: url("selected.png"); 
   display:none;
 }
+div.dropArea {
+  width:60px;
+  border:1px dotted #555;
+  display:inline-block;
+  text-align:center;
+}
 </style>
 </head>
 <body>
 <div id="ballpen"></div>
 <a href='#' id='logicLink'>logic</a>
+<div class='dropArea' draggable="true" id='pngDrop'>PNG</div>
+<div class='dropArea' draggable="true" id='jsonDrop' data-downloadurl="application/octet-stream:Eadui2.ttf:http://www.thecssninja.com/demo/gmail_dragout/Eadui.ttf">JSON</div>
+
+<input type='button' value='Import' id='import' />
+<canvas width="200" height="200" id='importCanvas' style='display:none'></canvas>
 <div id='palette'>
   
 </div>
@@ -66,6 +77,7 @@ $(function() {
     this.postPlaceFn = extra&&extra.postPlaceFn;
     this.logicFn = extra&&extra.logicFn;
     this.image = extra&&extra.image;
+    this.rgb = r | (g<<8) | (b<<16);
   }
   TileType.prototype.positionCss = function() {
     return positionCss(this.sheetX, this.sheetY)
@@ -254,10 +266,10 @@ $(function() {
     logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
   }
   
-  var floorType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType, portalType;
+  var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType, portalType;
   var tileTypes = [
     floorType = new TileType('floor', 2,2, 212,212,212),
-    new TileType('empty', 0,1, 0,0,0),
+    emptyType = new TileType('empty', 0,1, 0,0,0),
     wallType = new TileType('wall', 0,0, 120,120,120),
     switchType = new TileType('switch', 2,5, 185,122,87, {logicFn: exportSwitch}),
     new TileType('spike', 2,3, 55,55,55),
@@ -300,8 +312,7 @@ $(function() {
   
   var dirtyWalls = {};
   function isWall(x, y) {
-    if (x<0 || y<0 || x>=width || y>=height) return false;
-    return tiles[x][y].type == wallType;
+    return tiles[x] && tiles[x][y] && tiles[x][y].type == wallType;
   }
   function maybeIsDirtyWall(x, y) {
     if (isWall(x,y)) dirtyWalls[x + ' ' + y] = tiles[x][y];
@@ -311,7 +322,6 @@ $(function() {
       var wall = dirtyWalls[key];
       if (wall.type != wallType) continue;
       
-      console.log('cleaning', wall);
       wall.type.drawOn(wall.elem, wall);
     }
     dirtyWalls = {};
@@ -319,38 +329,48 @@ $(function() {
   
   var $map = $('#map');
   var $palette = $('#palette');
-  var height = 20;
-  var width = 10;
-  var html = '';
-  var row = "<div class='tileRow'>";
   
-  var brushTileType = tileTypes[0];
-  
-  for (var x=0; x<width; x++) {
-    row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'></div></div></div>";
-  }
-  row += "</div>"
-  for (var y=0; y<height; y++) {
-    html += row;
-  }
-  console.log(row)
-  $map.html( html );
-  
-  var $tiles = $map.find('.tile');
-  var tiles = [];
-  
-  for (var x=0; x<width; x++) {
-    tiles[x] = [];
-    for (var y=0; y<height; y++) {
-      var $tile = $($tiles[y*width + x]).data('x', x).data('y', y);
-      tiles[x][y] = new Tile();
-      tiles[x][y].elem = $tile;
-      tiles[x][y].type = brushTileType;
-      tiles[x][y].x = x;
-      tiles[x][y].y = y;
-      brushTileType.drawOn($tile, tiles[x][y]);
+  var height;
+  var width;
+  var $tiles;
+  var tiles;
+  function buildTilesWith(types) {
+    width = types.length;
+    height = types[0].length;
+    
+    var html = '';
+    var row = "<div class='tileRow'>";
+    
+    var brushTileType = tileTypes[0];
+    
+    for (var x=0; x<width; x++) {
+      row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'></div></div></div>";
     }
+    row += "</div>"
+    for (var y=0; y<height; y++) {
+      html += row;
+    }
+    console.log(row)
+    $map.html( html );
+    
+    $tiles = $map.find('.tile');
+    tiles = [];
+    
+    for (var x=0; x<width; x++) {
+      tiles[x] = [];
+      for (var y=0; y<height; y++) {
+        var $tile = $($tiles[y*width + x]).data('x', x).data('y', y);
+        var tile = tiles[x][y] = new Tile();
+        tile.elem = $tile;
+        tile.x = x;
+        tile.y = y;
+        tile.setType(types[x][y]);
+      }
+    }
+    
+    cleanDirtyWalls();
   }
+  buildTilesWith([[floorType]]);
   
   var selectedTool = pencil;
   
@@ -502,6 +522,129 @@ $(function() {
     selectedTool = $(this).data('tool');
     selectedTool.select.call(selectedTool);
   })
+  
+  var importJson;
+  var importPng;
+  //$jsonDrop.ondragover = function () { this.className = 'hover'; return false; };
+  //$jsonDrop.ondragend = function () { this.className = ''; return false; };
+  var jsonDropArea = document.getElementById('jsonDrop')
+  jsonDropArea.ondragover = function () { return false; };
+  jsonDropArea.ondragend = function () { return false; };
+  jsonDropArea.ondrop = function (e) {
+    e.preventDefault();
+
+    var file = e.dataTransfer.files[0],
+        reader = new FileReader();
+    reader.onload = function (event) {
+      console.log(event.target.result);
+      localStorage.setItem('importJson', event.target.result);
+      //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
+    };
+    console.log(file);
+    reader.readAsText(file);
+
+    return false;
+  };
+  jsonDropArea.addEventListener("dragstart",function(evt){
+    console.log(evt);
+    evt.dataTransfer.setData("DownloadURL",
+      'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+    return false;
+  },false);
+  
+  var pngDropArea = document.getElementById('pngDrop');
+  pngDropArea.ondragover = function () { return false; };
+  pngDropArea.ondragend = function () { return false; };
+  pngDropArea.ondrop = function (e) {
+    e.preventDefault();
+
+    var file = e.dataTransfer.files[0],
+        reader = new FileReader();
+    reader.onload = function (event) {
+      console.log(event.target.result);
+      localStorage.setItem('importPng', event.target.result);
+      //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
+    };
+    console.log(file);
+    reader.readAsDataURL(file);
+
+    return false;
+  };
+  
+  $('#import').click(function() {
+    var png = localStorage.getItem('importPng');
+    var json = JSON.parse(localStorage.getItem('importJson'));
+    console.log(png, json);
+    var canvas = document.getElementById('importCanvas');
+    var ctx = canvas.getContext('2d');
+    
+    var img = new Image();
+    img.onload = function() {
+      console.log("loaded");
+      var w = img.width;
+      var h = img.height;
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(img,0,0);
+      var imgd = ctx.getImageData(0, 0, w, h).data;
+      console.log(imgd);
+      var typeByColor = {};
+      tileTypes.forEach(function(type) {
+        typeByColor[type.rgb] = type;
+      })
+      
+      var fields = json.fields || {};
+      console.log(fields);
+      var cols = [];
+      for (var x=0; x<w; x++) {
+        var col = [];
+        for (var y=0; y<h; y++) {
+          var i = (y*w + x)*4;
+          var pixel = imgd[i] | (imgd[i+1]<<8) | (imgd[i+2]<<16);
+          var type = typeByColor[pixel] || emptyType;
+          if (type == onFieldType || type==offFieldType || type==redFieldType || type==blueFieldType) {
+            type = {on: onFieldType, off: offFieldType, red: redFieldType, blue: blueFieldType
+              }[(fields[x+','+y]||{}).defaultState] || offFieldType;
+          }
+          col.push(type);
+        }
+        cols.push(col);
+      }
+      buildTilesWith(cols);
+      
+      var portals = json.portals || {};
+      for (var key in portals) {
+        var xy = key.split(',');
+        var tile = (tiles[xy[0]]||[])[xy[1]];
+        if (tile && tile.type==portalType) {
+          var dest = portals[key].destination||{};
+          tile.destination = (tiles[dest.x]||[])[dest.y];
+        }
+      }
+      
+      var switches = json.switches || {};
+      console.log('switches',switches)
+      for (var key in switches) {
+        var xy = key.split(',');
+        var tile = (tiles[xy[0]]||[])[xy[1]];
+        console.log(tile)
+        if (tile && tile.type == switchType) {
+          tile.affected = []
+          var toggles = (switches[key].toggle||[]);
+          toggles.forEach(function(affected) {
+            console.log(affected);
+            var pos = affected.pos || {};
+            var affectedTile = (tiles[pos.x]||[])[pos.y];
+            if (affectedTile) tile.affected.push(affectedTile);
+          });
+        }
+      }
+    }
+    img.src = png;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
+  });
 });
 </script>
+
+
+	<script ty
 </body></html>
