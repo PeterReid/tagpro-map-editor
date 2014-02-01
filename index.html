@@ -50,6 +50,7 @@ div.selectionIndicator {
 </div>
 
 <input type='button' value='Export!' id='export' />
+<input type='button' value='Save!' id='save' />
 
 <script>
 $(function() {
@@ -355,7 +356,7 @@ $(function() {
   
   var mouseDown = false;
   $map.on('mousedown', '.tile', function(e) {
-    if (event.which==1) {
+    if (e.which==1) {
       mouseDown = true;
       var x = $(this).data('x');
       var y = $(this).data('y');
@@ -373,8 +374,8 @@ $(function() {
       cleanDirtyWalls();
     }
   })
-  .on('mouseup', '.tile', function() {
-    if (event.which==1) {
+  .on('mouseup', '.tile', function(e) {
+    if (e.which==1) {
       mouseDown = false;
       cleanDirtyWalls();
     }
@@ -413,6 +414,38 @@ $(function() {
     return logic;
   }
   
+  function extractMap() {
+    var map = {};
+    map.tiles = [];
+    for (var y=0; y<height; y++) {
+      var row = map.tiles[y] = [];
+      for (var x=0; x<width; x++) {
+        var tile = tiles[x][y];
+        var cell;
+        if (tile.type == portalType) {
+          cell = {
+            type: tile.type.name,
+            destination: tile.destination ? [tile.destination.x, tile.destination.y] : [x,y]
+          }
+        } else if (tile.type == switchType) {
+          var targets = [];
+          for (var key in tile.affected||[]) {
+            var affected = tile.affected[key];
+            targets.push([affected.x, affected.y])
+          }
+          cell = {
+            type: tile.type.name,
+            targets: targets
+          }
+        } else {
+          cell = tile.type.name;
+        }
+        row[x] = cell;
+      }
+    }
+    return map;
+  }
+  
   $('#export').click(function() {
     console.log('exporting')
     var 
@@ -444,6 +477,10 @@ $(function() {
     $('#logicLink').attr('href', logicUrl);
   });
   
+  $('#save').click(function() {
+    var map = extractMap();
+    console.log(map);
+  });
   
   $.each(tileTypes, function(idx, type) {
     var $button = $("<div class='tileBackground'><div class='tile'></div></div>");
