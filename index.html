@@ -45,7 +45,7 @@ div.tileBackground {
 </head>
 <body>
 <div id="ballpen"></div>
-
+<a href='#' id='logicLink'>logic</a>
 <div id='palette'>
   
 </div>
@@ -71,6 +71,8 @@ $(function() {
     this.sheetY = sheetY;
     this.color = String.fromCharCode(r)+String.fromCharCode(g)+String.fromCharCode(b)+String.fromCharCode(255);
     this.postPlaceFn = extra&&extra.postPlaceFn;
+    this.logicFn = extra&&extra.logicFn;
+    this.image = extra&&extra.image;
   }
   TileType.prototype.positionCss = function() {
     return -this.sheetX*tileSize + 'px ' + -this.sheetY*tileSize + 'px';
@@ -78,6 +80,7 @@ $(function() {
   TileType.prototype.drawOn = function($elem) {
     $elem.css('background-color', this.name == 'empty' ? 'black' : '');
     $elem.css('background-position', this.positionCss())
+    $elem.css('background-image', 'url("' + (this.image || 'default-skin') + '.png")')
   }
 
   function ensureUnique(placedX, placedY) {
@@ -91,6 +94,12 @@ $(function() {
     }
   }
   
+  function setFieldFn(defaultState) {
+    return function(logic, tile) {
+      logic.fields[tile.x + ',' + tile.y] = {defaultState: defaultState};
+    }
+  }
+  
   var floorType, blueFlagType, redFlagType;
   var tileTypes = [
     floorType=new TileType('floor', 2,2, 212,212,212),
@@ -99,10 +108,11 @@ $(function() {
     new TileType('switch', 2,5, 185,122,87),
     new TileType('spike', 2,3, 55,55,55),
     new TileType('powerup', 7,8, 0,255,0),
-    new TileType('openField', 10,1, 0,128,0),
-    new TileType('closedField', 10,2, 0,128,0),
-    new TileType('redField', 10,3, 0,128,0),
-    new TileType('blueField', 10,4, 0,128,0),
+    new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
+    new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
+    new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
+    new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
+    new TileType('blueField', 10,4, 0,117 ,0, {logicFn: setFieldFn('blue')}),
     redFlagType = new TileType('redFlag', 8,0, 255,0,0),
     blueFlagType = new TileType('blueFlag', 9,0, 0,0,255)
   ]
@@ -194,6 +204,26 @@ $(function() {
     return text;
   }
   
+  function makeLogic() {
+    var logic = {
+      info: {
+        name: 'Untitled',
+        author: 'Anonymous'
+      },
+      switches: {},
+      fields: {}
+    };
+      
+    for (var x=0; x<width; x++) {
+      for (var y=0; y<height; y++) {
+        var fn = tiles[x][y].type.logicFn;
+        if (fn) fn(logic, tiles[x][y])
+      }
+    }
+    console.log(logic);
+    return logic;
+  }
+  
   $('#export').click(function() {
     console.log('exporting')
     var 
@@ -201,15 +231,18 @@ $(function() {
       pngFile,
       base64png,
       dataUrl = 'data:image/png;base64,',
+      logicUrl = 'data:application/json;base64,',
       img,
       ballpen;
 
     pngData	= createPng();
     pngFile = generatePng(width, height, pngData);
-
+    
     base64png = Base64.encode(pngFile);
     dataUrl += base64png;
 
+    logicUrl += Base64.encode(JSON.stringify(makeLogic()));
+    
     img = document.createElement("img");
     img.src = dataUrl;
     img.style.float = "left";
@@ -219,6 +252,7 @@ $(function() {
     ballpen = document.getElementById("ballpen");
     ballpen.insertBefore(img, ballpen.firstChild);
     
+    $('#logicLink').attr('href', logicUrl);
   });
   
   
