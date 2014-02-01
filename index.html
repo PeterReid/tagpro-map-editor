@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<title>halp</title>
+		<title>TagPro Map Editor</title>
 		<script src="generatepng.js"></script>
 		<script src="rainbow_ball.js"></script>
 		<script src="webtoolkit.base64.js"></script>
@@ -49,8 +49,8 @@ div.tileBackground {
 <div id='palette'>
   
 </div>
-
-
+<a href='#' id='toolPencil'>Pencil</a>
+<a href='#' id='toolWire'>Wire</a>
 
 <div style='height:30em;overflow:scroll' id='map'>
 
@@ -59,8 +59,6 @@ div.tileBackground {
 </div>
 
 <input type='button' value='Export!' id='export' />
-
-<!-- id='logic' value='{ "info": { "name": "Test", "author": "Peter" }}' /-->
 
 <script>
 $(function() {
@@ -81,6 +79,12 @@ $(function() {
     $elem.css('background-color', this.name == 'empty' ? 'black' : '');
     $elem.css('background-position', this.positionCss())
     $elem.css('background-image', 'url("' + (this.image || 'default-skin') + '.png")')
+  }
+  
+  function Tool(down, drag, up) {
+    this.down = down;
+    this.drag = drag;
+    this.up = up;
   }
 
   function ensureUnique(placedX, placedY) {
