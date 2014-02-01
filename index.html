@@ -26,19 +26,23 @@ div.tileRow {
   height:40px;
 }
 div.tile {
-  z-index:1;
   width:40px;
   height:40px;
   background-image: url("default-skin.png"); 
   display:inline-block;
 }
 div.tileBackground {
-  z-index:1;
   width:40px;
   height:40px;
   background-image: url("default-skin.png"); 
   display:inline-block;
   background-position: -80px -80px;
+}
+div.selectionIndicator {
+  width:40px;
+  height:40px;
+  background-image: url("selected.png"); 
+  display:none;
 }
 </style>
 </head>
@@ -48,9 +52,9 @@ div.tileBackground {
 <div id='palette'>
   
 </div>
-<a href='#' id='toolPencil'>Pencil</a>
-<a href='#' id='toolBrush'>Brush</a>
-<a href='#' id='toolWire'>Wire</a>
+<a href='#' id='toolPencil' class='toolButton'>Pencil</a>
+<a href='#' id='toolBrush' class='toolButton'>Brush</a>
+<a href='#' id='toolWire' class='toolButton'>Wire</a>
 
 <div style='height:30em;overflow:scroll' id='map'>
 
@@ -85,6 +89,8 @@ $(function() {
     this.down = fns.down || function() {};
     this.drag = fns.drag || function() {};
     this.up = fns.up || function() {};
+    this.select = fns.select || function() {};
+    this.unselect = fns.unselect || function() {};
   }
   var pencil = new Tool({
     drag: function(x,y) {
@@ -102,8 +108,45 @@ $(function() {
       }
     }
   });
+  var wire = new Tool({
+    unselect: function() {
+      clearHighlights();
+    },
+    down: function(x,y) {
+      var tile = tiles[x][y];
+      if (tile.type == switchType) {
+        console.log('selected a switch')
+        this.selectedSwitch = tile;
+        clearHighlights();
+        tile.highlight(true);
+        
+        var sel = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
+        for (var key in sel) {
+          var coords = sel[key];
+          tiles[coords[0]][coords[1]].highlight(true);
+        }
+      } else {
+        if (this.selectedSwitch) {
+          var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
+          var key = x + ',' + y;
+          if (affected[key]) {
+            console.log('unselected');
+            delete affected[key]
+            tile.highlight(false);
+            console.log('unselected', affected);
+          } else {
+            affected[key] = [x,y];
+            tile.highlight(true);
+            console.log('selected', affected);
+          }
+        }
+      }
+    }
+  });
   
-  
+  function clearHighlights() {
+    $map.find('.selectionIndicator').css('display', 'none');
+  }
   
 
   function ensureUnique(placedX, placedY) {
@@ -123,24 +166,43 @@ $(function() {
     }
   }
   
-  var floorType, blueFlagType, redFlagType;
+  function exportSwitch(logic, tile) {
+    if (tile.type == switchType) {
+      var toggles = [];
+      console.log(tile.affected);
+      for (var key in tile.affected) {
+        var coord = tile.affected[key];
+        console.log(coord);
+        var affectedTile = tiles[coord[0]][coord[1]];
+        var t = affectedTile.type;
+        console.log(affectedTile, t);
+        if (t==bombType || t==onFieldType || t==offFieldType || t==redFieldType || t.type==blueFieldType) {
+          toggles.push({pos: {x: affectedTile.x, y: affectedTile.y}});
+          console.log(toggles);
+        }
+      }
+      logic.switches[tile.x + ',' + tile.y] = {toggle: toggles};
+    }
+  }
+  
+  var floorType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType;
   var tileTypes = [
-    floorType=new TileType('floor', 2,2, 212,212,212),
+    floorType = new TileType('floor', 2,2, 212,212,212),
     new TileType('empty', 0,1, 0,0,0),
     new TileType('wall', 0,0, 120,120,120),
-    new TileType('switch', 2,5, 185,122,87),
+    switchType = new TileType('switch', 2,5, 185,122,87, {logicFn: exportSwitch}),
     new TileType('spike', 2,3, 55,55,55),
-    new TileType('bomb', 6,5, 255,128,0),
+    bombType=new TileType('bomb', 6,5, 255,128,0),
     new TileType('powerup', 7,8, 0,255,0),
     new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
     new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
     new TileType('redSpeedpad', 0,0, 255,115,115, {image: 'speedpadred'}),
     new TileType('redFloor', 3,1, 220,186,186),
     new TileType('blueFloor', 3,2 , 187,184,221),
-    new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
-    new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
-    new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
-    new TileType('blueField', 10,4, 0,117 ,0, {logicFn: setFieldFn('blue')}),
+    offFieldType = new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
+    onFieldType = new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
+    redFieldType = new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
+    blueFieldType= new TileType('blueField', 10,4, 0,117 ,0, {logicFn: setFieldFn('blue')}),
     redFlagType = new TileType('redFlag', 8,0, 255,0,0),
     blueFlagType = new TileType('blueFlag', 9,0, 0,0,255)
   ]
@@ -156,6 +218,9 @@ $(function() {
       type.postPlaceFn.call(type, this.x, this.y);
     }
   }
+  Tile.prototype.highlight = function(highlighted) {
+    this.elem.find('.selectionIndicator').css('display', highlighted ? 'inline-block' : 'none');
+  }
 
   var $map = $('#map');
   var $palette = $('#palette');
@@ -167,7 +232,7 @@ $(function() {
   var brushTileType = tileTypes[0];
   
   for (var x=0; x<width; x++) {
-    row += "<div class='tileBackground'><div class='tile'></div></div>";
+    row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'></div></div></div>";
   }
   row += "</div>"
   for (var y=0; y<height; y++) {
@@ -200,6 +265,7 @@ $(function() {
       mouseDown = true;
       var x = $(this).data('x');
       var y = $(this).data('y');
+      selectedTool.down.call(selectedTool, x,y);
       selectedTool.drag.call(selectedTool, x,y);
       e.preventDefault();
     }
@@ -292,15 +358,14 @@ $(function() {
     $palette.append($button);
   });
   
-  $('#toolPencil').click(function() {
-    selectedTool = pencil;
-  });
-  $('#toolBrush').click(function() {
-    selectedTool = brush;
-  });
-  $('#toolWire').click(function() {
-    selectedTool = wire;
-  });
+  $('#toolPencil').data('tool', pencil);
+  $('#toolBrush').data('tool', brush);
+  $('#toolWire').data('tool', wire);
+  $('.toolButton').click(function() {
+    selectedTool.unselect.call(selectedTool)
+    selectedTool = $(this).data('tool');
+    selectedTool.select.call(selectedTool);
+  })
 });
 </script>
 </body></html>
