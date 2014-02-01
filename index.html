@@ -54,6 +54,9 @@ div.selectionIndicator {
 <script>
 $(function() {
   var tileSize = 40;
+  function positionCss(x, y) {
+    return -x*tileSize + 'px ' + -y*tileSize + 'px';
+  }
   function TileType(name, sheetX, sheetY, r,g,b, extra) {
     this.name = name;
     this.sheetX = sheetX;
@@ -64,13 +67,46 @@ $(function() {
     this.image = extra&&extra.image;
   }
   TileType.prototype.positionCss = function() {
-    return -this.sheetX*tileSize + 'px ' + -this.sheetY*tileSize + 'px';
+    return positionCss(this.sheetX, this.sheetY)
   }
-  TileType.prototype.drawOn = function($elem) {
-    $elem.css('background-color', this.name == 'empty' ? 'black' : '');
-    $elem.css('background-position', this.positionCss())
-    $elem.css('background-image', 'url("' + (this.image || 'default-skin') + '.png")')
+  TileType.prototype.drawOn = function($elem, tile) {
+    var styleBgColor = this.name == 'empty' ? 'black' : '';
+    if (styleBgColor != $elem.styleBgColor) {
+      $elem.css('background-color', styleBgColor);
+      $elem.styleBgColor = styleBgColor;
+    }
+    var styleUrl = 'url("' + (this.image || 'default-skin') + '.png")';
+    if (styleUrl != $elem.styleUrl) {
+      $elem.css('background-image', styleUrl)
+      $elem.styleUrl = styleUrl;
+    }
+    if (this == wallType && tile) {
+      var x = tile.x, y = tile.y;
+      var idx = (isWall(x-1,y)?1:0) | (isWall(x+1,y)?2:0) | (isWall(x,y-1)?4:0) | (isWall(x,y+1)?8:0);
+      var coords = [
+        [0,0], //
+        [9,6], // L
+        [8,6], // R
+        [2,4], // LR
+        [0,6], // U
+        [6,8], // LU
+        [2,8], // RU
+        [4,8], // LRU
+        [0,2],  // D
+        [6,0], // LD
+        [2,0], // RD
+        [4,0], // LRD
+        [4,1], // UD
+        [7,4], // LUD
+        [0,4], // RUD
+        [4,4]  // LRUD
+      ][idx];
+      $elem.css('background-position', positionCss(coords[0], coords[1]))
+    } else {
+      $elem.css('background-position', this.positionCss())
+    }
   }
+  
   
   function Tool(fns) {
     this.down = fns.down || function() {};
@@ -217,11 +253,11 @@ $(function() {
     logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
   }
   
-  var floorType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType, portalType;
+  var floorType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType, portalType;
   var tileTypes = [
     floorType = new TileType('floor', 2,2, 212,212,212),
     new TileType('empty', 0,1, 0,0,0),
-    new TileType('wall', 0,0, 120,120,120),
+    wallType = new TileType('wall', 0,0, 120,120,120),
     switchType = new TileType('switch', 2,5, 185,122,87, {logicFn: exportSwitch}),
     new TileType('spike', 2,3, 55,55,55),
     bombType=new TileType('bomb', 6,5, 255,128,0),
@@ -246,15 +282,40 @@ $(function() {
   Tile.prototype.setType = function(type) {
     if  (this.type==type) return;
     this.type = type;
-    type.drawOn(this.elem);
+    type.drawOn(this.elem, this);
     if (type.postPlaceFn) {
       type.postPlaceFn.call(type, this.x, this.y);
     }
+    
+    maybeIsDirtyWall(this.x-1, this.y);
+    maybeIsDirtyWall(this.x+1, this.y);
+    maybeIsDirtyWall(this.x, this.y-1);
+    maybeIsDirtyWall(this.x, this.y+1);
   }
   Tile.prototype.highlight = function(highlighted) {
     this.elem.find('.selectionIndicator').css('display', highlighted ? 'inline-block' : 'none');
   }
 
+  
+  var dirtyWalls = {};
+  function isWall(x, y) {
+    if (x<0 || y<0 || x>=width || y>=height) return false;
+    return tiles[x][y].type == wallType;
+  }
+  function maybeIsDirtyWall(x, y) {
+    if (isWall(x,y)) dirtyWalls[x + ' ' + y] = tiles[x][y];
+  }
+  function cleanDirtyWalls() {
+    for (var key in dirtyWalls) {
+      var wall = dirtyWalls[key];
+      if (wall.type != wallType) continue;
+      
+      console.log('cleaning', wall);
+      wall.type.drawOn(wall.elem, wall);
+    }
+    dirtyWalls = {};
+  }
+  
   var $map = $('#map');
   var $palette = $('#palette');
   var height = 20;
@@ -286,7 +347,7 @@ $(function() {
       tiles[x][y].type = brushTileType;
       tiles[x][y].x = x;
       tiles[x][y].y = y;
-      brushTileType.drawOn($tile);
+      brushTileType.drawOn($tile, tiles[x][y]);
     }
   }
   
@@ -300,6 +361,7 @@ $(function() {
       var y = $(this).data('y');
       selectedTool.down.call(selectedTool, x,y);
       selectedTool.drag.call(selectedTool, x,y);
+      cleanDirtyWalls();
       e.preventDefault();
     }
   })
@@ -308,11 +370,13 @@ $(function() {
       var x = $(this).data('x');
       var y = $(this).data('y');
       selectedTool.drag.call(selectedTool, x,y);
+      cleanDirtyWalls();
     }
   })
   .on('mouseup', '.tile', function() {
     if (event.which==1) {
       mouseDown = false;
+      cleanDirtyWalls();
     }
   });
   
