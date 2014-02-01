@@ -81,18 +81,18 @@ $(function() {
     $elem.css('background-image', 'url("' + (this.image || 'default-skin') + '.png")')
   }
   
-  function Tool(down, drag, up) {
-    this.down = down;
-    this.drag = drag;
-    this.up = up;
+  function Tool(fns) {
+    this.down = fns.down || function() {};
+    this.drag = fns.drag || function() {};
+    this.up = fns.up || function() {};
   }
-  var pencil = new Tool(function() {
-    }, function(x,y) {
+  var pencil = new Tool({
+    drag: function(x,y) {
       tiles[x][y].setType(brushTileType);
-    }, function() {
-    });
-  var brush = new Tool(function() {
-    }, function(x,y) {
+    }
+  });
+  var brush = new Tool({
+    drag: function(x,y) {
       for (var ix=x-1; ix<=x+1; ix++) {
         for (var iy=y-1; iy<=y+1; iy++) {
           if (ix>=0 && iy>=0 && ix<width && iy<height) {
@@ -100,9 +100,8 @@ $(function() {
           }
         }
       }
-      
-    }, function() {
-    });
+    }
+  });
   
   
   
