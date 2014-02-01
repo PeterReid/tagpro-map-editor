@@ -54,7 +54,7 @@ div.dropArea {
 <a href='#' id='toolFill' class='toolButton'>Fill</a>
 <a href='#' id='toolWire' class='toolButton'>Wire</a>
 
-<div style='height:30em;overflow:scroll' id='map'>
+<div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'>
 
 
 
@@ -62,6 +62,10 @@ div.dropArea {
 
 <input type='button' value='Export!' id='export' />
 <input type='button' value='Save!' id='save' />
+
+<input type='text' id='resizeWidth' />
+<input type='text' id='resizeHeight' />
+<input type='button' value='Resize' id='resize' />
 
 <script>
 $(function() {
@@ -466,40 +470,25 @@ $(function() {
     return map;
   }
   
+  function getPngBase64() {
+    return 'data:image/png;base64,' + Base64.encode(generatePng(width, height, createPng()));
+  }
+  
   $('#export').click(function() {
     console.log('exporting')
-    var 
-      pngData,
-      pngFile,
-      base64png,
-      dataUrl = 'data:image/png;base64,',
-      logicUrl = 'data:application/json;base64,',
-      img,
-      ballpen;
+    var img,ballpen;
 
-    pngData	= createPng();
-    pngFile = generatePng(width, height, pngData);
-    
-    base64png = Base64.encode(pngFile);
-    dataUrl += base64png;
-
-    logicUrl += Base64.encode(JSON.stringify(makeLogic()));
-    
     img = document.createElement("img");
-    img.src = dataUrl;
-    img.style.float = "left";
-    img.style.left = "0";
-    img.style.top = "0";
-    img.style.zIndex = "2";
+    img.src = getPngBase64();
     ballpen = document.getElementById("ballpen");
     ballpen.insertBefore(img, ballpen.firstChild);
     
-    $('#logicLink').attr('href', logicUrl);
+    $('#logicLink').attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
   });
   
   $('#save').click(function() {
-    var map = extractMap();
-    console.log(map);
+    localStorage.setItem('png', getPngBase64());
+    localStorage.setItem('json', JSON.stringify(makeLogic()));
   });
   
   $.each(tileTypes, function(idx, type) {
@@ -571,23 +560,20 @@ $(function() {
     return false;
   };
   
-  $('#import').click(function() {
-    var png = localStorage.getItem('importPng');
-    var json = JSON.parse(localStorage.getItem('importJson'));
-    console.log(png, json);
+  function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight) {
     var canvas = document.getElementById('importCanvas');
     var ctx = canvas.getContext('2d');
-    
+    var json = JSON.parse(jsonString);
     var img = new Image();
     img.onload = function() {
-      console.log("loaded");
       var w = img.width;
       var h = img.height;
+      optWidth = optWidth || w;
+      optHeight = optHeight || h;
       canvas.width = w;
       canvas.height = h;
       ctx.drawImage(img,0,0);
       var imgd = ctx.getImageData(0, 0, w, h).data;
-      console.log(imgd);
       var typeByColor = {};
       tileTypes.forEach(function(type) {
         typeByColor[type.rgb] = type;
@@ -596,15 +582,20 @@ $(function() {
       var fields = json.fields || {};
       console.log(fields);
       var cols = [];
-      for (var x=0; x<w; x++) {
+      for (var x=0; x<optWidth; x++) {
         var col = [];
-        for (var y=0; y<h; y++) {
-          var i = (y*w + x)*4;
-          var pixel = imgd[i] | (imgd[i+1]<<8) | (imgd[i+2]<<16);
-          var type = typeByColor[pixel] || emptyType;
-          if (type == onFieldType || type==offFieldType || type==redFieldType || type==blueFieldType) {
-            type = {on: onFieldType, off: offFieldType, red: redFieldType, blue: blueFieldType
-              }[(fields[x+','+y]||{}).defaultState] || offFieldType;
+        for (var y=0; y<optHeight; y++) {
+          var type;
+          if (x<w && y<h) {
+            var i = (y*w + x)*4;
+            var pixel = imgd[i] | (imgd[i+1]<<8) | (imgd[i+2]<<16);
+            type = typeByColor[pixel] || emptyType;
+            if (type == onFieldType || type==offFieldType || type==redFieldType || type==blueFieldType) {
+              type = {on: onFieldType, off: offFieldType, red: redFieldType, blue: blueFieldType
+                }[(fields[x+','+y]||{}).defaultState] || offFieldType;
+            }
+          } else {
+            type = emptyType;
           }
           col.push(type);
         }
@@ -639,10 +630,34 @@ $(function() {
           });
         }
       }
+      
+      $('#resizeWidth').val(optWidth);
+      $('#resizeHeight').val(optHeight);
     }
-    img.src = png;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
+    img.src = pngBase64;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
+  }
+  
+  $('#import').click(function() {
+    restoreFromPngAndJson(
+      localStorage.getItem('importPng'),
+      localStorage.getItem('importJson'));
   });
+  
+  $('#resize').click(function() {
+    var width = parseInt($('#resizeWidth').val(), 10);
+    var height = parseInt($('#resizeHeight').val(), 10);
+    
+    var png = getPngBase64();
+    var json = JSON.stringify(makeLogic());
+    
+    restoreFromPngAndJson(png, json, width, height);
+  });
+  
+  var savedPng = localStorage.getItem('png')
+  var savedJson = localStorage.getItem('json')
+  restoreFromPngAndJson(savedPng, savedJson);
 });
+
 </script>
 
 
