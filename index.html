@@ -30,7 +30,7 @@ div.selectionIndicator {
   background-image: url("selected.png"); 
   display:none;
 }
-div.dropArea {
+a.dropArea {
   width:60px;
   border:1px dotted #555;
   display:inline-block;
@@ -39,12 +39,12 @@ div.dropArea {
 </style>
 </head>
 <body>
-<div id="ballpen"></div>
-<a href='#' id='logicLink'>logic</a>
-<div class='dropArea' draggable="true" id='pngDrop'>PNG</div>
-<div class='dropArea' draggable="true" id='jsonDrop' data-downloadurl="application/octet-stream:Eadui2.ttf:http://www.thecssninja.com/demo/gmail_dragout/Eadui.ttf">JSON</div>
+<a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
+<a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
 
 <input type='button' value='Import' id='import' />
+<input type='button' value='Export!' id='export' />
+<input type='button' value='Save!' id='save' />
 <canvas width="200" height="200" id='importCanvas' style='display:none'></canvas>
 <div id='palette'>
   
@@ -60,8 +60,6 @@ div.dropArea {
 
 </div>
 
-<input type='button' value='Export!' id='export' />
-<input type='button' value='Save!' id='save' />
 
 <input type='text' id='resizeWidth' />
 <input type='text' id='resizeHeight' />
@@ -150,9 +148,8 @@ $(function() {
   });
   var fill = new Tool({
     drag: function(x,y) {
-      console.log('filling with', brushTileType);
       var changed = {};
-      changed[x + ' ' + y] = true;
+      changed[x + ',' + y] = true;
 
       var toChange = [ tiles[x][y] ];
       var targetType = tiles[x][y].type;
@@ -165,22 +162,19 @@ $(function() {
         var tempToChange = [];
 
         toChange.forEach(function(tile) {
-          console.log('Expanding from', tile);
           for (var ix=tile.x-1; ix<=tile.x+1; ix++) {
             for (var iy=tile.y-1; iy<=tile.y+1; iy++) {
               if (Math.abs(tile.x-ix) + Math.abs(tile.y-iy) == 1&& ix>=0 && iy>=0 && ix<width && iy<height) {
                 var test = tiles[ix][iy];
-                console.log('Expanding to', test);
-                if (test.type == targetType && !changed[ix + ' ' + iy]) {
+                if (test.type == targetType && !changed[ix + ',' + iy]) {
                   tempToChange.push(test);
-                  changed[ix + ' ' + iy] = true;
+                  changed[ix + ',' + iy] = true;
                 }
               }
             }
           }
         });
         toChange = tempToChange;
-        console.log('changed:', changed, 'toChange:', toChange);
       }
     }
   })
@@ -216,14 +210,11 @@ $(function() {
         var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
         var key = x + ',' + y;
         if (affected[key]) {
-          console.log('unselected');
           delete affected[key]
           tile.highlight(false);
-          console.log('unselected', affected);
         } else {
           affected[key] = tile;
           tile.highlight(true);
-          console.log('selected', affected);
         }
       }
     }
@@ -253,14 +244,11 @@ $(function() {
   
   function exportSwitch(logic, tile) {
     var toggles = [];
-    console.log(tile.affected);
     for (var key in tile.affected) {
       var affectedTile = tile.affected[key];
       var t = affectedTile.type;
-      console.log(affectedTile, t);
-      if (t==bombType || t==onFieldType || t==offFieldType || t==redFieldType || t.type==blueFieldType) {
+      if (t==bombType || t==onFieldType || t==offFieldType || t==redFieldType || t==blueFieldType) {
         toggles.push({pos: {x: affectedTile.x, y: affectedTile.y}});
-        console.log(toggles);
       }
     }
     logic.switches[tile.x + ',' + tile.y] = {toggle: toggles};
@@ -319,7 +307,7 @@ $(function() {
     return tiles[x] && tiles[x][y] && tiles[x][y].type == wallType;
   }
   function maybeIsDirtyWall(x, y) {
-    if (isWall(x,y)) dirtyWalls[x + ' ' + y] = tiles[x][y];
+    if (isWall(x,y)) dirtyWalls[x + ',' + y] = tiles[x][y];
   }
   function cleanDirtyWalls() {
     for (var key in dirtyWalls) {
@@ -334,10 +322,13 @@ $(function() {
   var $map = $('#map');
   var $palette = $('#palette');
   
+  var brushTileType = tileTypes[0];
+  
   var height;
   var width;
   var $tiles;
   var tiles;
+  
   function buildTilesWith(types) {
     width = types.length;
     height = types[0].length;
@@ -345,7 +336,6 @@ $(function() {
     var html = '';
     var row = "<div class='tileRow'>";
     
-    var brushTileType = tileTypes[0];
     
     for (var x=0; x<width; x++) {
       row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'></div></div></div>";
@@ -354,7 +344,6 @@ $(function() {
     for (var y=0; y<height; y++) {
       html += row;
     }
-    console.log(row)
     $map.html( html );
     
     $tiles = $map.find('.tile');
@@ -434,7 +423,6 @@ $(function() {
         if (fn) fn(logic, tiles[x][y])
       }
     }
-    console.log(logic);
     return logic;
   }
   
@@ -475,15 +463,15 @@ $(function() {
   }
   
   $('#export').click(function() {
-    console.log('exporting')
-    var img,ballpen;
+    //var img,ballpen;
 
-    img = document.createElement("img");
-    img.src = getPngBase64();
-    ballpen = document.getElementById("ballpen");
-    ballpen.insertBefore(img, ballpen.firstChild);
+    //img = document.createElement("img");
+    //img.src = getPngBase64();
+    //b//allpen = document.getElementById("ballpen");
+    //ballpen.insertBefore(img, ballpen.firstChild);
     
-    $('#logicLink').attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+    $(pngDropArea).attr('href', getPngBase64());
   });
   
   $('#save').click(function() {
@@ -496,7 +484,6 @@ $(function() {
     type.drawOn($button.find('.tile'));
     $button.click('click', function() {
       brushTileType = type;
-      console.log('sel', type);
       
     });
     $palette.append($button);
@@ -525,17 +512,14 @@ $(function() {
     var file = e.dataTransfer.files[0],
         reader = new FileReader();
     reader.onload = function (event) {
-      console.log(event.target.result);
       localStorage.setItem('importJson', event.target.result);
       //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
     };
-    console.log(file);
     reader.readAsText(file);
 
     return false;
   };
   jsonDropArea.addEventListener("dragstart",function(evt){
-    console.log(evt);
     evt.dataTransfer.setData("DownloadURL",
       'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
     return false;
@@ -550,11 +534,9 @@ $(function() {
     var file = e.dataTransfer.files[0],
         reader = new FileReader();
     reader.onload = function (event) {
-      console.log(event.target.result);
       localStorage.setItem('importPng', event.target.result);
       //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
     };
-    console.log(file);
     reader.readAsDataURL(file);
 
     return false;
@@ -580,7 +562,6 @@ $(function() {
       })
       
       var fields = json.fields || {};
-      console.log(fields);
       var cols = [];
       for (var x=0; x<optWidth; x++) {
         var col = [];
@@ -614,19 +595,16 @@ $(function() {
       }
       
       var switches = json.switches || {};
-      console.log('switches',switches)
       for (var key in switches) {
         var xy = key.split(',');
         var tile = (tiles[xy[0]]||[])[xy[1]];
-        console.log(tile)
         if (tile && tile.type == switchType) {
           tile.affected = []
           var toggles = (switches[key].toggle||[]);
           toggles.forEach(function(affected) {
-            console.log(affected);
             var pos = affected.pos || {};
             var affectedTile = (tiles[pos.x]||[])[pos.y];
-            if (affectedTile) tile.affected.push(affectedTile);
+            if (affectedTile) tile.affected[pos.x + ',' + pos.y] = (affectedTile);
           });
         }
       }
