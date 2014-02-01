@@ -40,6 +40,7 @@ div.selectionIndicator {
 </div>
 <a href='#' id='toolPencil' class='toolButton'>Pencil</a>
 <a href='#' id='toolBrush' class='toolButton'>Brush</a>
+<a href='#' id='toolFill' class='toolButton'>Fill</a>
 <a href='#' id='toolWire' class='toolButton'>Wire</a>
 
 <div style='height:30em;overflow:scroll' id='map'>
@@ -94,6 +95,42 @@ $(function() {
       }
     }
   });
+  var fill = new Tool({
+    drag: function(x,y) {
+      console.log('filling with', brushTileType);
+      var changed = {};
+      changed[x + ' ' + y] = true;
+
+      var toChange = [ tiles[x][y] ];
+      var targetType = tiles[x][y].type;
+
+      while (toChange.length > 0) {
+        toChange.forEach(function(tile) {
+          tile.setType(brushTileType);
+        });
+
+        var tempToChange = [];
+
+        toChange.forEach(function(tile) {
+          console.log('Expanding from', tile);
+          for (var ix=tile.x-1; ix<=tile.x+1; ix++) {
+            for (var iy=tile.y-1; iy<=tile.y+1; iy++) {
+              if (Math.abs(tile.x-ix) + Math.abs(tile.y-iy) == 1&& ix>=0 && iy>=0 && ix<width && iy<height) {
+                var test = tiles[ix][iy];
+                console.log('Expanding to', test);
+                if (test.type == targetType && !changed[ix + ' ' + iy]) {
+                  tempToChange.push(test);
+                  changed[ix + ' ' + iy] = true;
+                }
+              }
+            }
+          }
+        });
+        toChange = tempToChange;
+        console.log('changed:', changed, 'toChange:', toChange);
+      }
+    }
+  })
   var wire = new Tool({
     unselect: function() {
       clearHighlights();
@@ -357,6 +394,7 @@ $(function() {
   
   $('#toolPencil').data('tool', pencil);
   $('#toolBrush').data('tool', brush);
+  $('#toolFill').data('tool', fill);
   $('#toolWire').data('tool', wire);
   $('.toolButton').click(function() {
     selectedTool.unselect.call(selectedTool)
