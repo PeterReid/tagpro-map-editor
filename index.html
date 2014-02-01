@@ -159,11 +159,13 @@ $(function() {
   }
   
   $map.on('mousedown', '.tile', function(e) {
-    activeTool = selectedTool;
-    var x = $(this).data('x');
-    var y = $(this).data('y');
-    activeTool(x,y);
-    e.preventDefault();
+    if (event.which==1) {
+      activeTool = selectedTool;
+      var x = $(this).data('x');
+      var y = $(this).data('y');
+      activeTool(x,y);
+      e.preventDefault();
+    }
   })
   .on('mousemove', '.tile', function() {
     console.log(activeTool);
@@ -175,8 +177,9 @@ $(function() {
     }
   })
   .on('mouseup', '.tile', function() {
-    console.log('up');
-    activeTool = null;
+    if (event.which==1) {
+      activeTool = null;
+    }
   });
   
   var wall = String.fromCharCode(120)+String.fromCharCode(120)+String.fromCharCode(120)+String.fromCharCode(255);
