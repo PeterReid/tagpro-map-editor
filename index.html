@@ -59,11 +59,17 @@ a.dropArea {
 
 </div>
 
-
-<input type='text' id='resizeWidth' />
-<input type='text' id='resizeHeight' />
-<input type='button' value='Resize' id='resize' />
-
+<div>
+  Name: <input type='text' id='mapName' />
+</div>
+<div>
+  Author: <input type='text' id='author' />
+</div>
+<div>
+  <input type='text' id='resizeWidth' />
+  <input type='text' id='resizeHeight' />
+  <input type='button' value='Resize' id='resize' />
+</div>
 <script>
 $(function() {
   var tileSize = 40;
@@ -379,6 +385,8 @@ $(function() {
       }
     }
     buildTilesWith(emptyTypes);
+    $('#mapName').val('Untitled');
+    $('#author').val('Anonymous');
   })();
   
   var selectedTool = pencil;
@@ -425,8 +433,8 @@ $(function() {
   function makeLogic() {
     var logic = {
       info: {
-        name: 'Untitled',
-        author: 'Anonymous'
+        name: $('#mapName').val(),
+        author: $('#author').val()
       },
       switches: {},
       fields: {},
@@ -600,6 +608,11 @@ $(function() {
         cols.push(col);
       }
       buildTilesWith(cols);
+      
+      var info = json.info || {};
+      $('#mapName').val(info.name || '');
+      $('#author').val(info.author || '');
+      
       
       var portals = json.portals || {};
       for (var key in portals) {
