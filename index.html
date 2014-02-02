@@ -11,6 +11,12 @@
 div.tileRow {
   height:40px;
 }
+.hasImportable {
+  background-color:#9f9;
+}
+.hasExportable {
+  background-color:#99f;
+}
 div.tile {
   width:40px;
   height:40px;
@@ -72,6 +78,9 @@ a.dropArea {
 </div>
 <script>
 $(function() {
+  var importJson;
+  var importPng;
+  
   var tileSize = 40;
   function positionCss(x, y) {
     return -x*tileSize + 'px ' + -y*tileSize + 'px';
@@ -487,13 +496,8 @@ $(function() {
   }
   
   $('#export').click(function() {
-    //var img,ballpen;
-
-    //img = document.createElement("img");
-    //img.src = getPngBase64();
-    //b//allpen = document.getElementById("ballpen");
-    //ballpen.insertBefore(img, ballpen.firstChild);
-    
+    $('.dropArea').removeClass('hasImportable');
+    $('.dropArea').addClass('hasExportable');
     $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
     $(pngDropArea).attr('href', getPngBase64());
   });
@@ -530,20 +534,7 @@ $(function() {
   var jsonDropArea = document.getElementById('jsonDrop')
   jsonDropArea.ondragover = function () { return false; };
   jsonDropArea.ondragend = function () { return false; };
-  jsonDropArea.ondrop = function (e) {
-    e.preventDefault();
-
-    var file = e.dataTransfer.files[0],
-        reader = new FileReader();
-    console.log(file);
-    reader.onload = function (event) {
-      localStorage.setItem('importJson', event.target.result);
-      //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
-    };
-    reader.readAsText(file);
-
-    return false;
-  };
+  
   jsonDropArea.addEventListener("dragstart",function(evt){
     evt.dataTransfer.setData("DownloadURL",
       'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
@@ -553,20 +544,34 @@ $(function() {
   var pngDropArea = document.getElementById('pngDrop');
   pngDropArea.ondragover = function () { return false; };
   pngDropArea.ondragend = function () { return false; };
-  pngDropArea.ondrop = function (e) {
+ 
+  jsonDropArea.ondrop = pngDropArea.ondrop = function (e) {
     e.preventDefault();
-
-    var file = e.dataTransfer.files[0],
-        reader = new FileReader();
-    reader.onload = function (event) {
-      localStorage.setItem('importPng', event.target.result);
-      //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
-    };
-    reader.readAsDataURL(file);
-
+    $('.dropArea').removeClass('hasExportable');
+    for (var i=0; i<e.dataTransfer.files.length; i++) {
+      var file = e.dataTransfer.files[i],
+          reader = new FileReader();
+          
+      if (file.name.match(/json$/i)) {
+        console.log(file);
+        reader.onload = function (event) {
+          importJson = event.target.result;
+          $(jsonDropArea).addClass('hasImportable');
+        };
+        reader.readAsText(file);
+      } else if (file.name.match(/png$/i)) {
+        reader.onload = function (event) {
+          importPng = event.target.result;
+          $(pngDropArea).addClass('hasImportable');
+        }
+        reader.readAsDataURL(file);
+      } else {
+        alert('Expected a PNG or a JSON, but got ' + file.name);
+      }
+    }
+    
     return false;
   };
-  
   function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight) {
     var canvas = document.getElementById('importCanvas');
     var ctx = canvas.getContext('2d');
@@ -613,7 +618,6 @@ $(function() {
       $('#mapName').val(info.name || '');
       $('#author').val(info.author || '');
       
-      
       var portals = json.portals || {};
       for (var key in portals) {
         var xy = key.split(',');
@@ -643,9 +647,13 @@ $(function() {
   }
   
   $('#import').click(function() {
-    restoreFromPngAndJson(
-      localStorage.getItem('importPng'),
-      localStorage.getItem('importJson'));
+    if (importPng && importJson) {
+      restoreFromPngAndJson(
+        importPng,
+        importJson);
+    } else {
+      alert('Please drag and drop a PNG and a JSON to import onto their receptacles.')
+    }
   });
   
   $('#resize').click(function() {
