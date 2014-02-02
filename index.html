@@ -365,8 +365,21 @@ $(function() {
     }
     
     cleanDirtyWalls();
+    
+    $('#resizeWidth').val(width);
+    $('#resizeHeight').val(height);
   }
-  buildTilesWith([[floorType]]);
+  
+  (function() {
+    var emptyTypes = [];
+    for (var x=0;x<20;x++) {
+      var col = emptyTypes[x] = [];
+      for (var y=0; y<20; y++) {
+        col.push(floorType)
+      }
+    }
+    buildTilesWith(emptyTypes);
+  })();
   
   var selectedTool = pencil;
   
@@ -514,6 +527,7 @@ $(function() {
 
     var file = e.dataTransfer.files[0],
         reader = new FileReader();
+    console.log(file);
     reader.onload = function (event) {
       localStorage.setItem('importJson', event.target.result);
       //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
@@ -611,9 +625,6 @@ $(function() {
           });
         }
       }
-      
-      $('#resizeWidth').val(optWidth);
-      $('#resizeHeight').val(optHeight);
     }
     img.src = pngBase64;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
   }
