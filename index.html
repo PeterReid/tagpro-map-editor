@@ -35,6 +35,12 @@ div.selectionIndicator {
   background-image: url("selected.png"); 
   display:none;
 }
+div.tileTypeSelectionIndicator {
+  width:40px;
+  height:40px;
+  background-image: url("selected.png");
+  display:none;
+}
 a.dropArea {
   width:60px;
   border:1px dotted #555;
@@ -44,6 +50,7 @@ a.dropArea {
 a.selectedTool {
   background-color: red;
 }
+
 
 </style>
 </head>
@@ -525,15 +532,19 @@ $(function() {
   });
   
   $.each(tileTypes, function(idx, type) {
-    var $button = $("<div class='tileBackground'><div class='tile'></div></div>");
+    var $button = $("<div class='tileBackground'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
     type.drawOn($button.find('.tile'));
     $button.click('click', function() {
+      $('.tileTypeSelectionIndicator').css('display', 'none');
       brushTileType = type;
-      
+      $(this).find('.tileTypeSelectionIndicator').css('display', 'inline-block');
+
     });
     $palette.append($button);
   });
-  
+
+  $('.tileTypeSelectionIndicator:first').css('display', 'inline-block');
+
   $('#toolPencil').data('tool', pencil);
   $('#toolBrush').data('tool', brush);
   $('#toolFill').data('tool', fill);
@@ -692,6 +703,4 @@ $(function() {
 
 </script>
 
-
-	<script ty
 </body></html>
