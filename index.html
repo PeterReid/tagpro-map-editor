@@ -210,7 +210,6 @@ $(function() {
       this.selectedSwitch = null;
     },
     stateChange: function() {
-      console.log('state change!');
       this.refreshHighlights();
     },
     down: function(x,y) {
@@ -230,7 +229,6 @@ $(function() {
       } else if (this.selectedSwitch && this.selectedSwitch.type == switchType) {
         var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
         var key = x + ',' + y;
-        console.log(affected);
         if (affected[key]) {
           delete affected[key]
           tile.highlight(false);
@@ -238,7 +236,6 @@ $(function() {
           affected[key] = tile;
           tile.highlight(true);
         }
-        console.log(affected);
         mayHaveChanged(this.selectedSwitch);
       }
     }
@@ -335,7 +332,6 @@ $(function() {
         }
         size = new Point({x:backingStates.length, y:backingStates[0].length});
       }
-      console.log('size changed!');
       backingStates = [];
       for (var x=0; x<tiles.length; x++) {
         backingStates[x] = [];
@@ -347,10 +343,8 @@ $(function() {
       return new UndoStep(changes, size);
     }
     
-    // TODO: Handle size changed
     for (var key in dirtyStates) {
       var newState = new TileState(dirtyStates[key]);
-      console.log(newState)
       if (!newState.equals(backingStates[newState.x][newState.y])) {
         changes.push(backingStates[newState.x][newState.y]);
         backingStates[newState.x][newState.y] = newState;
@@ -363,7 +357,6 @@ $(function() {
   
   function savePoint() {
     var step = recordStep();
-    console.log(step)
     if (step) {
       undoSteps.push(step);
       redoSteps = [];
@@ -391,13 +384,8 @@ $(function() {
       }
     }
     
-    console.log('applying', step)
     for (var i=0; i<tileChanges.length; i++) {
       var change = tileChanges[i];
-      console.log('change', change);
-      console.log('cols', tiles.length);
-      console.log('col', tiles[change.x]);
-      console.log('cell', tiles[change.x][change.y]);
       change.restoreInto(tiles[change.x][change.y]);
     }
     var step = recordStep();
@@ -406,13 +394,11 @@ $(function() {
     }
     
     cleanDirtyWalls();
-    console.log('state change for', selectedTool);
     if (selectedTool) selectedTool.stateChange();
   }
   
   function undo() {
     moveChange(undoSteps, redoSteps);
-    console.log(undoSteps, redoSteps);
   }
   function redo() {
     moveChange(redoSteps, undoSteps);
@@ -752,7 +738,6 @@ $(function() {
           reader = new FileReader();
           
       if (file.name.match(/json$/i)) {
-        console.log(file);
         reader.onload = function (event) {
           importJson = event.target.result;
           $(jsonDropArea).addClass('hasImportable');
