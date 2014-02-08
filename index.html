@@ -62,6 +62,9 @@ a.selectedTool {
 <a href='#' id='toolBrush' class='toolButton'>Brush</a>
 <a href='#' id='toolFill' class='toolButton'>Fill</a>
 <a href='#' id='toolWire' class='toolButton'>Wire</a>
+|
+<a href='#' id='undo'>Undo</a>
+<a href='#' id='redo'>Redo</a>
 
 <div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'>
 
@@ -151,6 +154,7 @@ $(function() {
     this.up = fns.up || function() {};
     this.select = fns.select || function() {};
     this.unselect = fns.unselect || function() {};
+    this.stateChange = fns.stateChange || function() {}; // arbitrary state change happened -- redraw tool state if necessary
   }
   var pencil = new Tool({
     drag: function(x,y) {
@@ -205,32 +209,28 @@ $(function() {
       clearHighlights();
       this.selectedSwitch = null;
     },
+    stateChange: function() {
+      console.log('state change!');
+      this.refreshHighlights();
+    },
     down: function(x,y) {
       var tile = tiles[x][y];
       if (tile.type == portalType) {
-        clearHighlights();
         if (this.selectedSwitch && this.selectedSwitch.type == portalType) { 
+          mayHaveChanged(this.selectedSwitch);
           this.selectedSwitch.destination = tile;
           this.selectedSwitch = null;
         } else {
           this.selectedSwitch = tile;
-          tile.highlight(true);
-          if (tile.destination) {
-            tile.destination.highlight(true);
-          }
         }
+        this.refreshHighlights();
       } else if (tile.type == switchType) {
         this.selectedSwitch = tile;
-        clearHighlights();
-        tile.highlight(true);
-        
-        var sel = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
-        for (var key in sel) {
-          sel[key].highlight(true);
-        }
+        this.refreshHighlights();
       } else if (this.selectedSwitch && this.selectedSwitch.type == switchType) {
         var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
         var key = x + ',' + y;
+        console.log(affected);
         if (affected[key]) {
           delete affected[key]
           tile.highlight(false);
@@ -238,9 +238,27 @@ $(function() {
           affected[key] = tile;
           tile.highlight(true);
         }
+        console.log(affected);
+        mayHaveChanged(this.selectedSwitch);
       }
     }
   });
+  wire.refreshHighlights = function() {
+    clearHighlights();
+    if (this.selectedSwitch) {
+      this.selectedSwitch.highlight(true);
+      if (this.selectedSwitch.type == portalType) {
+        if (this.selectedSwitch.destination) {
+          this.selectedSwitch.destination.highlight(true);
+        }
+      } else if (this.selectedSwitch.type == switchType) {
+        var sel = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
+        for (var key in sel) {
+          sel[key].highlight(true);
+        }
+      }
+    }
+  }
   
   function clearHighlights() {
     $map.find('.selectionIndicator').css('display', 'none');
@@ -258,7 +276,128 @@ $(function() {
     }
   }
   
+  function Point(source) {
+    this.x = source.x;
+    this.y = source.y;
+  }
+  Point.cmp = function(a, b) {
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+    if (a.x != b.x) return a.x - b.x;
+    return a.y - b.y;
+  }
+  function TileState(source) {
+    this.x = source.x;
+    this.y = source.y;
+    this.type = source.type;
+    this.affected = [];
+    for (var key in source.affected||{}) {
+      this.affected.push(new Point(source.affected[key]));
+    }
+    this.affected.sort(Point.cmp);
+    this.destination = source.destination && new Point(source.destination);
+  }
+  TileState.prototype.equals = function(other) {
+    if (this.x!=other.x 
+      || this.y!=other.y 
+      || this.type!=other.type 
+      || Point.cmp(this.destination, other.destination)
+      || this.affected.length != other.affected.length) return false;
+    for (var i=0; i<this.affected.length; i++) {
+      if (Point.cmp(this.affected[i], other.affected[i])) return false;
+    }
+    return true;
+  }
+  TileState.prototype.restoreInto = function(tile) {
+    tile.setType(this.type);
+    tile.affected = {};
+    for (var i=0; i<this.affected.length; i++) {
+      var a = this.affected[i];
+      tile.affected[xy(a)] = tiles[a.x][a.y];
+    }
+    tile.destination = this.destination && tiles[this.destination.x][this.destination.y];
+    mayHaveChanged(tile);
+  }
+  
+  function recordStep() {
+    if (!backingStates) {
+      backingStates = [];
+      for (var x=0; x<tiles.length; x++) {
+        backingStates[x] = [];
+        for (var y=0; y<tiles[x].length; y++) {
+          backingStates[x][y] = new TileState(tiles[x][y]);
+        }
+      }
+    }
+    
+    // TODO: Handle size changed
+    var changes = [];
+    for (var key in dirtyStates) {
+      var newState = new TileState(dirtyStates[key]);
+      console.log(newState)
+      if (!newState.equals(backingStates[newState.x][newState.y])) {
+        changes.push(backingStates[newState.x][newState.y]);
+        backingStates[newState.x][newState.y] = newState;
+      }
+    }
+    dirtyStates = {}
+    if (!changes.length) return null;
+    return changes;
+  }
+  
+  function savePoint() {
+    var step = recordStep();
+    console.log(step)
+    if (step) {
+      undoSteps.push(step);
+      redoSteps = [];
+    }
+  }
+  
+  function moveChange(fromSteps, toSteps) {
+    if (!fromSteps.length) return;
+    
+    var step = fromSteps.splice(fromSteps.length-1, 1)[0];
+    console.log('applying', step)
+    var tileChanges = step;
+    for (var i=0; i<tileChanges.length; i++) {
+      var change = tileChanges[i];
+      change.restoreInto(tiles[change.x][change.y]);
+    }
+    var step = recordStep();
+    if (step) {
+      toSteps.push(step);
+    }
+    
+    cleanDirtyWalls();
+    console.log('state change for', selectedTool);
+    if (selectedTool) selectedTool.stateChange();
+  }
+  
+  function undo() {
+    moveChange(undoSteps, redoSteps);
+    console.log(undoSteps, redoSteps);
+  }
+  function redo() {
+    moveChange(redoSteps, undoSteps);
+  }
+  
+  function xy(pt) {
+    return pt.x + ',' + pt.y;
+  }
+  
+  var backingStates = null;
+  var dirtyStates = {};
+  function mayHaveChanged(tile) {
+    dirtyStates[xy(tile)] = tile;
+  }
+  
+  function UndoStep(states, size) {
+    
+  }
   var undoSteps = [];
+  var redoSteps = [];
   
   function setFieldFn(defaultState) {
     return function(logic, tile) {
@@ -334,6 +473,7 @@ $(function() {
     maybeIsDirtyWall(this.x+1, this.y);
     maybeIsDirtyWall(this.x, this.y-1);
     maybeIsDirtyWall(this.x, this.y+1);
+    mayHaveChanged(this);
   }
   Tile.prototype.highlight = function(highlighted) {
     this.elem.find('.selectionIndicator').css('display', highlighted ? 'inline-block' : 'none');
@@ -441,6 +581,7 @@ $(function() {
     if (e.which==1) {
       mouseDown = false;
       cleanDirtyWalls();
+      savePoint();
     }
   });
   
@@ -545,6 +686,9 @@ $(function() {
     selectedTool = $(this).data('tool');
     selectedTool.select.call(selectedTool);
   })
+  
+  $('#undo').click(undo);
+  $('#redo').click(redo);
   
   var importJson;
   var importPng;
@@ -661,6 +805,8 @@ $(function() {
           });
         }
       }
+      
+      savePoint();
     }
     img.src = pngBase64;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
   }
