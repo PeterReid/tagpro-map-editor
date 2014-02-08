@@ -254,6 +254,8 @@ $(function() {
     }
   }
   
+  var undoSteps = [];
+  
   function setFieldFn(defaultState) {
     return function(logic, tile) {
       logic.fields[tile.x + ',' + tile.y] = {defaultState: defaultState};
@@ -299,11 +301,26 @@ $(function() {
     blueFlagType = new TileType('blueFlag', 9,0, 0,0,255)
   ]
 
-  function Tile() {
-    
+  function Tile(options, elem) {
+    this.set(options);
+    if (elem) {
+      this.elem = elem;
+      this.setType(options.type, true);
+    }
   }
-  Tile.prototype.setType = function(type) {
-    if  (this.type==type) return;
+  Tile.prototype.set = function(options) {
+    this.x = options.x;
+    this.y = options.y;
+    this.type = options.type;
+    console.log(this.type)
+    this.affected = {};
+    for (var key in options.affected || {}) {
+      this.affected[key] = options.affected[key]
+    }
+    this.destination = options.destination;
+  }
+  Tile.prototype.setType = function(type, force) {
+    if  (this.type==type && !force) return;
     this.type = type;
     type.drawOn(this.elem, this);
     if (type.postPlaceFn) {
@@ -371,11 +388,7 @@ $(function() {
       tiles[x] = [];
       for (var y=0; y<height; y++) {
         var $tile = $($tiles[y*width + x]).data('x', x).data('y', y);
-        var tile = tiles[x][y] = new Tile();
-        tile.elem = $tile;
-        tile.x = x;
-        tile.y = y;
-        tile.setType(types[x][y]);
+        var tile = tiles[x][y] = new Tile({x: x, y: y, type: types[x][y]}, $tile);
       }
     }
     
