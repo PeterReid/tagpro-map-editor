@@ -321,7 +321,21 @@ $(function() {
   }
   
   function recordStep() {
-    if (!backingStates) {
+    var changes = [];
+    
+    if (!backingStates || backingStates.length != tiles.length || backingStates[0].length != tiles[0].length) {
+      var size;
+      if (backingStates) {
+        for (var x=0; x<backingStates.length; x++) {
+          for (var y=0; y<backingStates[0].length; y++) {
+            if (x>= tiles.length || y>=tiles[0].length) {
+              changes.push(backingStates[x][y]);
+            }
+          }
+        }
+        size = new Point({x:backingStates.length, y:backingStates[0].length});
+      }
+      console.log('size changed!');
       backingStates = [];
       for (var x=0; x<tiles.length; x++) {
         backingStates[x] = [];
@@ -329,10 +343,11 @@ $(function() {
           backingStates[x][y] = new TileState(tiles[x][y]);
         }
       }
+      
+      return new UndoStep(changes, size);
     }
     
     // TODO: Handle size changed
-    var changes = [];
     for (var key in dirtyStates) {
       var newState = new TileState(dirtyStates[key]);
       console.log(newState)
@@ -343,7 +358,7 @@ $(function() {
     }
     dirtyStates = {}
     if (!changes.length) return null;
-    return changes;
+    return new UndoStep(changes, null);
   }
   
   function savePoint() {
@@ -359,10 +374,30 @@ $(function() {
     if (!fromSteps.length) return;
     
     var step = fromSteps.splice(fromSteps.length-1, 1)[0];
+    var tileChanges = step.states;
+    if (step.size) {
+      var types = [];
+      for (var x=0; x<step.size.x; x++) {
+        types[x] = [];
+        for (var y=0; y<step.size.y; y++) {
+          types[x][y] = x<tiles.length && y<tiles[0].length ? tiles[x][y].type : emptyType;
+        }
+      }
+      buildTilesWith(types);
+      for (var x=0; x<backingStates.length && x<tiles.length; x++) {
+        for (var y=0; y<backingStates[x].length && y<tiles[0].length; y++) {
+          backingStates[x][y].restoreInto(tiles[x][y]);
+        }
+      }
+    }
+    
     console.log('applying', step)
-    var tileChanges = step;
     for (var i=0; i<tileChanges.length; i++) {
       var change = tileChanges[i];
+      console.log('change', change);
+      console.log('cols', tiles.length);
+      console.log('col', tiles[change.x]);
+      console.log('cell', tiles[change.x][change.y]);
       change.restoreInto(tiles[change.x][change.y]);
     }
     var step = recordStep();
@@ -394,7 +429,8 @@ $(function() {
   }
   
   function UndoStep(states, size) {
-    
+    this.states = states;
+    this.size = size;
   }
   var undoSteps = [];
   var redoSteps = [];
@@ -821,14 +857,17 @@ $(function() {
     }
   });
   
-  $('#resize').click(function() {
-    var width = parseInt($('#resizeWidth').val(), 10);
-    var height = parseInt($('#resizeHeight').val(), 10);
-    
+  function resizeTo(width, height) {
     var png = getPngBase64();
     var json = JSON.stringify(makeLogic());
     
     restoreFromPngAndJson(png, json, width, height);
+  }
+  
+  $('#resize').click(function() {
+    var width = parseInt($('#resizeWidth').val(), 10);
+    var height = parseInt($('#resizeHeight').val(), 10);
+    resizeTo(width, height);
   });
   
   var savedPng = localStorage.getItem('png')
