@@ -41,6 +41,10 @@ a.dropArea {
   display:inline-block;
   text-align:center;
 }
+a.selectedTool {
+  background-color: red;
+}
+
 </style>
 </head>
 <body>
@@ -411,6 +415,7 @@ $(function() {
   })();
   
   var selectedTool = pencil;
+  $('#toolPencil').addClass('selectedTool');
   
   var mouseDown = false;
   $map.on('mousedown', '.tile', function(e) {
@@ -534,7 +539,9 @@ $(function() {
   $('#toolFill').data('tool', fill);
   $('#toolWire').data('tool', wire);
   $('.toolButton').click(function() {
-    selectedTool.unselect.call(selectedTool)
+    selectedTool.unselect.call(selectedTool);
+    $('.toolButton').removeClass('selectedTool');
+    $(this).addClass('selectedTool');
     selectedTool = $(this).data('tool');
     selectedTool.select.call(selectedTool);
   })
