@@ -9,44 +9,41 @@
 
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
+
 <body>
-<a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
-<a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
+  <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
+  <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
 
-<input type='button' value='Import' id='import' />
-<input type='button' value='Export!' id='export' />
-<input type='button' value='Save!' id='save' />
-<canvas width="200" height="200" id='importCanvas' style='display:none'></canvas>
-<div id='palette'>
-  
-</div>
-<a href='#' id='toolPencil' class='toolButton'>Pencil</a>
-<a href='#' id='toolBrush' class='toolButton'>Brush</a>
-<a href='#' id='toolFill' class='toolButton'>Fill</a>
-<a href='#' id='toolWire' class='toolButton'>Wire</a>
-|
-<a href='#' id='undo'>Undo</a>
-<a href='#' id='redo'>Redo</a>
+  <input type='button' value='Import' id='import' />
+  <input type='button' value='Export!' id='export' />
+  <input type='button' value='Save!' id='save' />
+  <canvas width="200" height="200" id='importCanvas' style='display:none'></canvas>
+  <div id='palette'></div>
 
-<div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'>
+  <a href='#' id='toolPencil' class='toolButton'>Pencil</a>
+  <a href='#' id='toolBrush' class='toolButton'>Brush</a>
+  <a href='#' id='toolFill' class='toolButton'>Fill</a>
+  <a href='#' id='toolWire' class='toolButton'>Wire</a>
+  |
+  <a href='#' id='undo'>Undo</a>
+  <a href='#' id='redo'>Redo</a>
 
+  <div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'></div>
 
+  <div>
+    Name: <input type='text' id='mapName' />
+  </div>
+  <div>
+    Author: <input type='text' id='author' />
+  </div>
+  <div>
+    <input type='text' id='resizeWidth' />
+    <input type='text' id='resizeHeight' />
+    <input type='button' value='Resize' id='resize' />
+  </div>
 
-</div>
-
-<div>
-  Name: <input type='text' id='mapName' />
-</div>
-<div>
-  Author: <input type='text' id='author' />
-</div>
-<div>
-  <input type='text' id='resizeWidth' />
-  <input type='text' id='resizeHeight' />
-  <input type='button' value='Resize' id='resize' />
-</div>
-
-<script type="text/javascript" src="map.js"></script>
+  <script type="text/javascript" src="importexport.js"></script>
+  <script type="text/javascript" src="map.js"></script>
 
 
 </body></html>
