@@ -1,0 +1,42 @@
+div.tileRow {
+    height:40px;
+}
+.hasImportable {
+    background-color:#9f9;
+}
+.hasExportable {
+    background-color:#99f;
+}
+div.tile {
+    width:40px;
+    height:40px;
+    display:inline-block;
+}
+div.tileBackground {
+    width:40px;
+    height:40px;
+    background-image: url("default-skin.png");
+    display:inline-block;
+    background-position: -80px -80px;
+}
+div.selectionIndicator {
+    width:40px;
+    height:40px;
+    background-image: url("selected.png");
+    display:none;
+}
+div.tileTypeSelectionIndicator {
+    width:40px;
+    height:40px;
+    background-image: url("selected.png");
+    display:none;
+}
+a.dropArea {
+    width:60px;
+    border:1px dotted #555;
+    display:inline-block;
+    text-align:center;
+}
+a.selectedTool {
+    background-color: red;
+}
