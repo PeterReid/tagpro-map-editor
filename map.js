@@ -63,6 +63,7 @@ $(function() {
 
 
   function Tool(fns) {
+    this.calculateTiles = fns.calculateTiles || function() {};
     this.down = fns.down || function() {};
     this.drag = fns.drag || function() {};
     this.up = fns.up || function() {};
@@ -87,17 +88,20 @@ $(function() {
     }
   });
   var fill = new Tool({
-    drag: function(x,y) {
-      var changed = {};
-      changed[x + ',' + y] = true;
-
-      var toChange = [ tiles[x][y] ];
+    calculateTiles: function(x,y) {
       var targetType = tiles[x][y].type;
 
+      if (targetType == brushTileType) {
+        // The brush matches the first tile, painting it would do nothing.
+        return [];
+      }
+
+      var toChange = [ tiles[x][y] ];
+
+      var changed = {};
+      changed[x + ',' + y] = tiles[x][y];
+
       while (toChange.length > 0) {
-        toChange.forEach(function(tile) {
-          tile.setType(brushTileType);
-        });
 
         var tempToChange = [];
 
@@ -108,7 +112,7 @@ $(function() {
                 var test = tiles[ix][iy];
                 if (test.type == targetType && !changed[ix + ',' + iy]) {
                   tempToChange.push(test);
-                  changed[ix + ',' + iy] = true;
+                  changed[ix + ',' + iy] = tiles[ix][iy];
                 }
               }
             }
@@ -116,6 +120,8 @@ $(function() {
         });
         toChange = tempToChange;
       }
+
+      return changed;
     }
   })
   var wire = new Tool({
@@ -173,6 +179,12 @@ $(function() {
 
   function clearHighlights() {
     $map.find('.selectionIndicator').css('display', 'none');
+  }
+
+  function clearPotentialHighlights() {
+    clearHighlights();
+
+    //$map.find('.potentialHighlight').css('display', 'none');
   }
 
 
@@ -414,6 +426,9 @@ $(function() {
   Tile.prototype.highlight = function(highlighted) {
     this.elem.find('.selectionIndicator').css('display', highlighted ? 'inline-block' : 'none');
   }
+  Tile.prototype.highlightWithPotential = function(highlighted) {
+    this.elem.find('.potentialHighlight').css('display', highlighted ? 'inline-block' : 'none');
+  }
 
 
   var dirtyWalls = {};
@@ -452,7 +467,7 @@ $(function() {
 
 
     for (var x=0; x<width; x++) {
-      row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'></div></div></div>";
+      row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'><div class='potentialHighlight'></div></div></div></div>";
     }
     row += "</div>"
     for (var y=0; y<height; y++) {
@@ -493,8 +508,44 @@ $(function() {
   var selectedTool = pencil;
   $('#toolPencil').addClass('selectedTool');
 
+  var potentialTiles = [];
+
+  function applyPotentials() {
+    $.each(potentialTiles, function(key, tile) {
+      tile.setType(brushTileType);
+    });
+  }
+
+  function setPotentials(tiles) {
+    console.log('Setting potentials', tiles);
+    potentialTiles = tiles;
+    $.each(potentialTiles, function(key, tile) {
+      tile.highlight(true);
+    });
+  }
+
   var mouseDown = false;
-  $map.on('mousedown', '.tile', function(e) {
+  $map.on('mouseenter', '.tile', function(e) {
+
+    var x = $(this).data('x');
+    var y = $(this).data('y');
+
+    if (selectedTool && selectedTool.calculateTiles != function(){} )
+      setPotentials(selectedTool.calculateTiles.call(selectedTool, x,y));
+
+    console.log(x, y, potentialTiles);
+    if (mouseDown) {
+      applyPotentials();
+    }
+
+//      console.log('mouse entered ', $(this).data('x'), $(this).data('y'));
+    })
+    .on('mouseleave', '.tile', function(e) {
+      potentialTiles = [];
+      clearPotentialHighlights();
+//      console.log('mouse left ', $(this).data('x'), $(this).data('y'));
+    })
+    .on('mousedown', '.tile', function(e) {
     if (e.which==1) {
       mouseDown = true;
       var x = $(this).data('x');
@@ -625,6 +676,7 @@ $(function() {
     $(this).addClass('selectedTool');
     selectedTool = $(this).data('tool');
     selectedTool.select.call(selectedTool);
+    potentialTiles = [];
   })
 
   $('#undo').click(undo);
