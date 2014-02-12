@@ -63,6 +63,7 @@ $(function() {
 
 
   function Tool(fns) {
+    this.type = fns.type || '';
     this.calculateTiles = fns.calculateTiles || function() {};
     this.down = fns.down || function() {};
     this.drag = fns.drag || function() {};
@@ -72,11 +73,13 @@ $(function() {
     this.stateChange = fns.stateChange || function() {}; // arbitrary state change happened -- redraw tool state if necessary
   }
   var pencil = new Tool({
+    type: 'applier',
     calculateTiles: function(x,y) {
       return [tiles[x][y]];
     }
   });
   var brush = new Tool({
+    type: 'applier',
     calculateTiles: function(x,y) {
       var calculated = [];
       for (var ix=x-1; ix<=x+1; ix++) {
@@ -90,6 +93,7 @@ $(function() {
     }
   });
   var fill = new Tool({
+    type: 'applier',
     calculateTiles: function(x,y) {
       var targetType = tiles[x][y].type;
 
@@ -127,6 +131,7 @@ $(function() {
     }
   })
   var wire = new Tool({
+    type: 'special',
     unselect: function() {
       clearHighlights();
       this.selectedSwitch = null;
@@ -182,11 +187,6 @@ $(function() {
   function clearHighlights() {
     $map.find('.selectionIndicator').css('display', 'none');
   }
-
-  function clearPotentialHighlights() {
-    $map.find('.potentialHighlight').css('display', 'none');
-  }
-
 
   function ensureUnique(placedX, placedY) {
     for (var x=0; x<width; x++) {
@@ -429,6 +429,9 @@ $(function() {
   Tile.prototype.highlightWithPotential = function(highlighted) {
     this.elem.find('.potentialHighlight').css('display', highlighted ? 'inline-block' : 'none');
   }
+  function clearPotentialHighlights() {
+    $map.find('.potentialHighlight').css('display', 'none');
+  }
 
 
   var dirtyWalls = {};
@@ -524,6 +527,9 @@ $(function() {
       tile.highlightWithPotential(true);
     });
   }
+  $map.mouseleave(function(e) {
+    console.log('map left');
+  });
 
   var mouseDown = false;
   $map.on('mouseenter', '.tile', function(e) {
@@ -531,14 +537,17 @@ $(function() {
     var x = $(this).data('x');
     var y = $(this).data('y');
 
-    if (selectedTool && selectedTool.calculateTiles != function(){} )
-      setPotentials(selectedTool.calculateTiles.call(selectedTool, x,y));
+    if (!selectedTool) return;
 
-    console.log(x, y, potentialTiles);
-    if (mouseDown) {
-      applyPotentials();
+    if (selectedTool.type == 'applier') {
+      if (selectedTool.calculateTiles != function(){} )
+        setPotentials(selectedTool.calculateTiles.call(selectedTool, x,y));
+
+      console.log(x, y, potentialTiles);
+      if (mouseDown) {
+        applyPotentials();
+      }
     }
-
 //      console.log('mouse entered ', $(this).data('x'), $(this).data('y'));
     })
     .on('mouseleave', '.tile', function(e) {
@@ -547,24 +556,29 @@ $(function() {
 //      console.log('mouse left ', $(this).data('x'), $(this).data('y'));
     })
     .on('mousedown', '.tile', function(e) {
-    if (e.which==1) {
-      mouseDown = true;
-//      var x = $(this).data('x');
-//      var y = $(this).data('y');
-//      selectedTool.down.call(selectedTool, x,y);
-//      selectedTool.drag.call(selectedTool, x,y);
-      applyPotentials();
-      e.preventDefault();
-    }
-  })
-//    .on('mousemove', '.tile', function() {
-//      if (mouseDown) {
-//        var x = $(this).data('x');
-//        var y = $(this).data('y');
-//        selectedTool.drag.call(selectedTool, x,y);
-//        cleanDirtyWalls();
-//      }
-//    })
+      if (e.which==1) {
+        mouseDown = true;
+  //      selectedTool.down.call(selectedTool, x,y);
+  //      selectedTool.drag.call(selectedTool, x,y);
+        if (selectedTool.type == 'applier') {
+          applyPotentials();
+        } else if (selectedTool.type == 'special') {
+          var x = $(this).data('x');
+          var y = $(this).data('y');
+          selectedTool.down.call(selectedTool, x,y);
+          selectedTool.drag.call(selectedTool, x,y);
+        }
+        e.preventDefault();
+      }
+    })
+    .on('mousemove', '.tile', function() {
+      if (selectedTool && selectedTool.type == 'special') {
+        var x = $(this).data('x');
+        var y = $(this).data('y');
+        selectedTool.drag.call(selectedTool, x,y);
+        cleanDirtyWalls();
+      }
+    })
     .on('mouseup', '.tile', function(e) {
       if (e.which==1) {
         mouseDown = false;
