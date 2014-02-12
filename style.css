@@ -31,10 +31,12 @@ div.tileTypeSelectionIndicator {
     background-image: url("selected.png");
     display:none;
 }
-div.selectionIndicator {
+div.potentialHighlight {
     width:40px;
     height:40px;
-    background-image: url("selected.png");
+    background-color:#99ff99;
+    opacity: .5;
+    /*background-image: url("selected.png");*/
     display:none;
 }
 a.dropArea {
