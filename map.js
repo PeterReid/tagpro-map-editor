@@ -104,8 +104,7 @@ $(function() {
 
       var toChange = [ tiles[x][y] ];
 
-      var changed = {};
-      changed[x + ',' + y] = tiles[x][y];
+      var changed = [ tiles[x][y] ];
 
       while (toChange.length > 0) {
 
@@ -116,9 +115,9 @@ $(function() {
             for (var iy=tile.y-1; iy<=tile.y+1; iy++) {
               if (Math.abs(tile.x-ix) + Math.abs(tile.y-iy) == 1&& ix>=0 && iy>=0 && ix<width && iy<height) {
                 var test = tiles[ix][iy];
-                if (test.type == targetType && !changed[ix + ',' + iy]) {
+                if (test.type == targetType && $.inArray(test, changed) === -1) {
                   tempToChange.push(test);
-                  changed[ix + ',' + iy] = tiles[ix][iy];
+                  changed.push(tiles[ix][iy]);
                 }
               }
             }
@@ -511,6 +510,21 @@ $(function() {
   var selectedTool = pencil;
   $('#toolPencil').addClass('selectedTool');
 
+  var symmetry = 'None';
+  var $symmetryRadios = $('input:radio[name=symmetry]');
+  if ($symmetryRadios.is(':checked') === false) {
+    $symmetryRadios.filter('[value=None]').prop('checked', true);
+  }
+
+  $symmetryRadios.click(function() {
+    console.log('Symmetry was ', symmetry);
+    var selectedSymmetry = $('input:radio[name=symmetry]:checked');
+    if (selectedSymmetry.length > 0) {
+      symmetry = selectedSymmetry.val();
+    }
+    console.log('Symmetry is ', symmetry);
+  });
+
   var potentialTiles = [];
 
   function applyPotentials() {
@@ -539,10 +553,26 @@ $(function() {
 
     if (!selectedTool) return;
 
-    if (selectedTool.type == 'applier') {
-      if (selectedTool.calculateTiles != function(){} )
-        setPotentials(selectedTool.calculateTiles.call(selectedTool, x,y));
+    if (selectedTool.type == 'applier' && selectedTool.calculateTiles != function(){} ) {
+      var potentials = [];
+      potentials = selectedTool.calculateTiles.call(selectedTool, x,y);
+      if (symmetry == 'Horizontal') {
+        var toBeMerged = selectedTool.calculateTiles.call(selectedTool, width - x - 1, y);
+        $.merge(potentials, toBeMerged);
+      }
+      if (symmetry == 'Vertical') {
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
+      }
+      if (symmetry == '4-Way') {
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y));
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
+      }
+      if (symmetry == 'Rotational') {
+        $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
+      }
 
+      setPotentials(potentials);
       console.log(x, y, potentialTiles);
       if (mouseDown) {
         applyPotentials();
