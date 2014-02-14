@@ -535,7 +535,7 @@ $(function() {
   }
 
   function setPotentials(tiles) {
-    console.log('Setting potentials', tiles);
+    //console.log('Setting potentials', tiles);
     potentialTiles = tiles;
     $.each(potentialTiles, function(key, tile) {
       tile.highlightWithPotential(true);
@@ -543,6 +543,20 @@ $(function() {
   }
   $map.mouseleave(function(e) {
     console.log('map left');
+  });
+
+  var controlDown = false;
+
+  $(document).keydown(function(e) {
+    if(e.which=="17") {
+      console.log('control down');
+      controlDown = true;
+    }
+  }).keyup(function(e) {
+      if (e.which=="17") {
+        console.log('control up');
+        controlDown = false;
+      }
   });
 
   var mouseDown = false;
@@ -573,7 +587,7 @@ $(function() {
       }
 
       setPotentials(potentials);
-      console.log(x, y, potentialTiles);
+//      console.log(x, y, potentialTiles);
       if (mouseDown) {
         applyPotentials();
       }
@@ -587,18 +601,20 @@ $(function() {
     })
     .on('mousedown', '.tile', function(e) {
       if (e.which==1) {
-        mouseDown = true;
-  //      selectedTool.down.call(selectedTool, x,y);
-  //      selectedTool.drag.call(selectedTool, x,y);
-        if (selectedTool.type == 'applier') {
-          applyPotentials();
-        } else if (selectedTool.type == 'special') {
-          var x = $(this).data('x');
-          var y = $(this).data('y');
-          selectedTool.down.call(selectedTool, x,y);
-          selectedTool.drag.call(selectedTool, x,y);
+        if (!controlDown) {
+          mouseDown = true;
+    //      selectedTool.down.call(selectedTool, x,y);
+    //      selectedTool.drag.call(selectedTool, x,y);
+          if (selectedTool.type == 'applier') {
+            applyPotentials();
+          } else if (selectedTool.type == 'special') {
+            var x = $(this).data('x');
+            var y = $(this).data('y');
+            selectedTool.down.call(selectedTool, x,y);
+            selectedTool.drag.call(selectedTool, x,y);
+          }
+          e.preventDefault();
         }
-        e.preventDefault();
       }
     })
     .on('mousemove', '.tile', function() {
@@ -611,11 +627,19 @@ $(function() {
     })
     .on('mouseup', '.tile', function(e) {
       if (e.which==1) {
+        if (controlDown) {
+          var x = $(this).data('x');
+          var y = $(this).data('y');
+          var eyeDropBrushType = tiles[x][y].type;
+          setBrushTileType(eyeDropBrushType);
+        } else {
+          savePoint();
+        }
         mouseDown = false;
         cleanDirtyWalls();
-        savePoint();
       }
     });
+
 
   var wall = String.fromCharCode(120)+String.fromCharCode(120)+String.fromCharCode(120)+String.fromCharCode(255);
   var open = String.fromCharCode(212)+String.fromCharCode(212)+String.fromCharCode(212)+String.fromCharCode(255);
@@ -697,14 +721,22 @@ $(function() {
     localStorage.setItem('json', JSON.stringify(makeLogic()));
   });
 
+  function setBrushTileType(type) {
+    $('.tileTypeSelectionIndicator').css('display', 'none');
+    $('.tilePaletteOption').each(function(idx, el) {
+      if ($(el).data('tileType') == type) {
+        brushTileType = type;
+        $(el).find('.tileTypeSelectionIndicator').css('display', 'inline-block');
+      }
+    })
+  }
+
   $.each(tileTypes, function(idx, type) {
-    var $button = $("<div class='tileBackground'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
+    var $button = $("<div class='tileBackground tilePaletteOption'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
+    $button.data('tileType', type);
     type.drawOn($button.find('.tile'));
     $button.click('click', function() {
-      $('.tileTypeSelectionIndicator').css('display', 'none');
-      brushTileType = type;
-      $(this).find('.tileTypeSelectionIndicator').css('display', 'inline-block');
-
+      setBrushTileType(type);
     });
     $palette.append($button);
   });
