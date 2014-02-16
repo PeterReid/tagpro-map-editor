@@ -369,7 +369,8 @@ $(function() {
     logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
   }
 
-  var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType, redFieldType, blueFieldType, portalType;
+  var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType,
+    redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType;
   var tileTypes = [
     floorType = new TileType('floor', 2,2, 212,212,212),
     emptyType = new TileType('empty', 0,1, 0,0,0),
@@ -386,10 +387,12 @@ $(function() {
     offFieldType = new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
     onFieldType = new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
     redFieldType = new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
-    blueFieldType = new TileType('blueField', 10,4, 0,117 ,0, {logicFn: setFieldFn('blue')}),
-    portalType = new TileType('portal', 0,0, 202, 192, 0, {image: 'portal', logicFn: exportPortal}),
+    blueFieldType = new TileType('blueField', 10,4, 0,117,0, {logicFn: setFieldFn('blue')}),
+    portalType = new TileType('portal', 0,0, 202, 192,0, {image: 'portal', logicFn: exportPortal}),
     redFlagType = new TileType('redFlag', 8,0, 255,0,0),
-    blueFlagType = new TileType('blueFlag', 9,0, 0,0,255)
+    blueFlagType = new TileType('blueFlag', 9,0, 0,0,255),
+    redSpawnType = new TileType('redSpawn', 6,2, 155,0,0),
+    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155)
   ]
 
   function Tile(options, elem) {
