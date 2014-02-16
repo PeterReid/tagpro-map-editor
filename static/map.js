@@ -265,6 +265,7 @@ $(function() {
         }
       }
 
+      dirtyStates = {}
       return new UndoStep(changes, size);
     }
 
@@ -706,21 +707,36 @@ $(function() {
   }
 
   function getPngBase64() {
-    return 'data:image/png;base64,' + Base64.encode(generatePng(width, height, createPng()));
+    return Base64.encode(generatePng(width, height, createPng()));
+  }
+  
+  function getPngBase64Url() {
+    return 'data:image/png;base64,' + getPngBase64();
   }
 
   $('#export').click(function() {
     $('.dropArea').removeClass('hasImportable');
     $('.dropArea').addClass('hasExportable');
     $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
-    $(pngDropArea).attr('href', getPngBase64());
+    $(pngDropArea).attr('href', getPngBase64Url());
   });
 
   $('#save').click(function() {
-    localStorage.setItem('png', getPngBase64());
+    localStorage.setItem('png', getPngBase64Url());
     localStorage.setItem('json', JSON.stringify(makeLogic()));
   });
 
+  $('#test').click(function() {
+    $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64()}, function(data) {
+      if (data && data.location) {
+        window.open(data.location);
+      } else {
+        alert("Test couldn't get started.")
+      }
+      //console.log('back from test', data)
+    });
+  });
+  
   function setBrushTileType(type) {
     $('.tileTypeSelectionIndicator').css('display', 'none');
     $('.tilePaletteOption').each(function(idx, el) {
@@ -890,7 +906,7 @@ $(function() {
   });
 
   function resizeTo(width, height) {
-    var png = getPngBase64();
+    var png = getPngBase64Url();
     var json = JSON.stringify(makeLogic());
 
     restoreFromPngAndJson(png, json, width, height);
