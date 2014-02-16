@@ -530,17 +530,38 @@ $(function() {
   });
 
   var potentialTiles = [];
+  var potentialSymmetryTiles = []; // these are tiles that will oppositely colored
 
+
+  function getOppositeType(type) {
+    if (type.name == 'blueSpeedpad') return $.grep(tileTypes, function(e) { return e.name === 'redSpeedpad' })[0];
+    if (type.name == 'redSpeedpad') return $.grep(tileTypes, function(e) { return e.name === 'blueSpeedpad' })[0];
+    if (type.name == 'blueFloor') return $.grep(tileTypes, function(e) { return e.name === 'redFloor' })[0];
+    if (type.name == 'redFloor') return $.grep(tileTypes, function(e) { return e.name === 'blueFloor' })[0];
+    if (type.name == 'redField') return $.grep(tileTypes, function(e) { return e.name === 'blueField' })[0];
+    if (type.name == 'blueField') return $.grep(tileTypes, function(e) { return e.name === 'redField' })[0];
+    if (type.name == 'redFlag') return $.grep(tileTypes, function(e) { return e.name === 'blueFlag' })[0];
+    if (type.name == 'blueFlag') return $.grep(tileTypes, function(e) { return e.name === 'redFlag' })[0];
+    if (type.name == 'redSpawn') return $.grep(tileTypes, function(e) { return e.name === 'blueSpawn' })[0];
+    if (type.name == 'blueSpawn') return $.grep(tileTypes, function(e) { return e.name === 'redSpawn' })[0];
+
+    return type;
+  }
   function applyPotentials() {
+    var oppositeType = getOppositeType(brushTileType);
+    $.each(potentialSymmetryTiles, function(key, tile) {
+      tile.setType(oppositeType);
+    });
     $.each(potentialTiles, function(key, tile) {
       tile.setType(brushTileType);
     });
     cleanDirtyWalls();
   }
 
-  function setPotentials(tiles) {
+  function setPotentials(tiles, symmetryTiles) {
     //console.log('Setting potentials', tiles);
     potentialTiles = tiles;
+    potentialSymmetryTiles = symmetryTiles;
     $.each(potentialTiles, function(key, tile) {
       tile.highlightWithPotential(true);
     });
@@ -572,25 +593,25 @@ $(function() {
     if (!selectedTool) return;
 
     if (selectedTool.type == 'applier' && selectedTool.calculateTiles != function(){} ) {
-      var potentials = [];
+      var potentials = [], symmetryPotentials = [];
       potentials = selectedTool.calculateTiles.call(selectedTool, x,y);
       if (symmetry == 'Horizontal') {
-        var toBeMerged = selectedTool.calculateTiles.call(selectedTool, width - x - 1, y);
-        $.merge(potentials, toBeMerged);
+        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width - x - 1, y));
       }
       if (symmetry == 'Vertical') {
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
+       $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
       }
       if (symmetry == '4-Way') {
+       // we don't have a way of determining which direction they want the opposite color symmetry, so we don't worry about it
        $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y));
        $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
        $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
       }
       if (symmetry == 'Rotational') {
-        $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
+        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
       }
 
-      setPotentials(potentials);
+      setPotentials(potentials, symmetryPotentials);
 //      console.log(x, y, potentialTiles);
       if (mouseDown) {
         applyPotentials();
