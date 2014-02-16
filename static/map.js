@@ -565,6 +565,9 @@ $(function() {
     $.each(potentialTiles, function(key, tile) {
       tile.highlightWithPotential(true);
     });
+    $.each(potentialSymmetryTiles, function(key, tile) {
+      tile.highlightWithPotential(true);
+    } )
   }
   $map.mouseleave(function(e) {
     console.log('map left');
