@@ -2,7 +2,7 @@ $(function() {
   var importJson;
   var importPng;
 
-  var maxZoom = 2;
+  var maxZoom = 3;
   var zoom = maxZoom;
   var tileSize = 40;
   
@@ -1047,7 +1047,7 @@ $(function() {
   });
   
   function showZoom() {
-    tileSize = [10,20,40][zoom];
+    tileSize = [10,20,30,40][zoom];
     var sizeCss = tileSize + 'px';
     var singleTileBackgroundSize = sizeCss + ' ' + sizeCss;
     
