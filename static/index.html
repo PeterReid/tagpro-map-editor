@@ -8,52 +8,121 @@
 		<script src="jquery-2.1.0.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="bootstrap.css">
 </head>
 
 <body>
-  <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
-  <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
 
-  <input type='button' value='Import' id='import' />
-  <input type='button' value='Export!' id='export' />
-  <input type='button' value='Save!' id='save' />
-  <input type='button' value='Test!' id='test' />
-  <input type='button' value='Zoom In!' id='zoomIn' />
-  <input type='button' value='Zoom Out!' id='zoomOut' />
+
+  <div class="col-md-2">
+    <div class="well">
+      <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
+      <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
+
+      <div>
+        <input type='button' value='Import' id='import' />
+        <input type='button' value='Export!' id='export' />
+      </div>
+      <input type='button' value='Save!' id='save' />
+      <input type='button' value='Test!' id='test' />
+
+      <div>
+        Name: <input type='text' id='mapName' />
+      </div>
+      <div>
+        Author: <input type='text' id='author' />
+      </div>
+      <div>
+        Width: <input type='text' id='resizeWidth' />
+        Height: <input type='text' id='resizeHeight' />
+        <input type='button' value='Resize' id='resize' />
+      </div>
+    </div>
+    <div class="well">
+      <div id='palette'></div>
+
+    </div>
+    <div class="well">
+      <a href='#' id='toolPencil' class='toolButton'>Pencil</a>
+      <a href='#' id='toolBrush' class='toolButton'>Brush</a>
+      <a href='#' id='toolLine' class='toolButton'>Line</a>
+      <a href='#' id='toolFill' class='toolButton'>Fill</a>
+      <a href='#' id='toolWire' class='toolButton'>Wire</a>
+      |
+      <a href='#' id='undo'>Undo</a>
+      <a href='#' id='redo'>Redo</a>
+      |
+      <input type='button' value='Zoom In!' id='zoomIn' />
+      <input type='button' value='Zoom Out!' id='zoomOut' />
+    </div>
+    <div class="well">
+      Symmetry
+      <br>
+      <div class="btn-group" data-toggle="buttons-radio">
+        <button type="button" class="btn btn-primary">None</button>
+        <button type="button" class="btn btn-primary">Horizontal</button>
+        <button type="button" class="btn btn-primary">Vertical</button>
+        <button type="button" class="btn btn-primary">4-Way</button>
+        <button type="button" class="btn btn-primary">Rotational</button>
+      </div>
+
+      <!--<form>-->
+      <!--<input type="radio" name="symmetry" value="None">None-->
+      <!--<input type="radio" name="symmetry" value="Horizontal">Horizontal-->
+      <!--<input type="radio" name="symmetry" value="Vertical">Vertical-->
+      <!--<input type="radio" name="symmetry" value="4-Way">4-Way-->
+      <!--<input type="radio" name="symmetry" value="Rotational">Rotational-->
+    <!--</form>-->
+    </div>
+
+
+  </div>
+  <div class="col-md-10">
+    <div class="row">
+      <div class="well">
+        <!--<div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'>-->
+          <div style='height:50em;overflow-x: scroll;white-space: nowrap;' id='map'>
+
+      </div>
+
+      </div>
+    </div>
+  </div>
+
+
+    <!---->
+  <!--<div class="row">-->
+    <!--<div class="col-md-2"><div class="well">File Options</div></div>-->
+    <!--<div class="col-md-10">-->
+      <!--<div class="row">-->
+        <!--<div class="col-md-10"><div class="well">Palette</div></div>-->
+      <!--</div>-->
+      <!--<div class="row">-->
+        <!--<div class="col-md-6"><div class="well">4</div></div>-->
+        <!--<div class="col-md-6"><div class="well">5</div></div>-->
+      <!--</div>-->
+    <!--</div>-->
+  <!--</div>-->
+  <!--<div class="row">-->
+    <!--<div class="col-md-2">-->
+      <!--<div class="well">6</div>-->
+    <!--</div>-->
+    <!--<div class="col-md-2">-->
+      <!--<div class="well">6</div>-->
+    <!--</div>-->
+    <!--<div class="col-md-2">-->
+      <!--<div class="well">6</div>-->
+    <!--</div>-->
+  <!--</div>-->
+
+
+
   <canvas width="200" height="200" id='importCanvas' style='display:none'></canvas>
-  <div id='palette'></div>
 
-  <a href='#' id='toolPencil' class='toolButton'>Pencil</a>
-  <a href='#' id='toolBrush' class='toolButton'>Brush</a>
-  <a href='#' id='toolLine' class='toolButton'>Line</a>
-  <a href='#' id='toolFill' class='toolButton'>Fill</a>
-  <a href='#' id='toolWire' class='toolButton'>Wire</a>
-  |
-  <a href='#' id='undo'>Undo</a>
-  <a href='#' id='redo'>Redo</a>
-  <br>
-  Symmetry:
-  <form>
-    <input type="radio" name="symmetry" value="None">None
-    <input type="radio" name="symmetry" value="Horizontal">Horizontal
-    <input type="radio" name="symmetry" value="Vertical">Vertical
-    <input type="radio" name="symmetry" value="4-Way">4-Way
-    <input type="radio" name="symmetry" value="Rotational">Rotational
-  </form>
 
-  <div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'></div>
 
-  <div>
-    Name: <input type='text' id='mapName' />
-  </div>
-  <div>
-    Author: <input type='text' id='author' />
-  </div>
-  <div>
-    <input type='text' id='resizeWidth' />
-    <input type='text' id='resizeHeight' />
-    <input type='button' value='Resize' id='resize' />
-  </div>
+
+
 
   <script type="text/javascript" src="map.js"></script>
 
