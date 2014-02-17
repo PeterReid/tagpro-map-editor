@@ -11,9 +11,11 @@ div.tile {
     width:40px;
     height:40px;
     display:inline-block;
-    position:absolute;
-    left:0;
-    top:0;
+}
+div.nestedSquare {
+  position:absolute;
+  left:0;
+  top:0;
 }
 div.tileBackground {
     width:40px;
@@ -28,9 +30,6 @@ div.selectionIndicator {
     height:40px;
     background-image: url("selected.png");
     display:none;
-    position:absolute;
-    left:0;
-    top:0;
 }
 div.tileTypeSelectionIndicator {
     width:40px;
@@ -45,9 +44,6 @@ div.potentialHighlight {
     opacity: .5;
     /*background-image: url("selected.png");*/
     display:none;
-    position:absolute;
-    left:0;
-    top:0;
 }
 a.dropArea {
     width:60px;

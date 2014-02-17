@@ -2,7 +2,10 @@ $(function() {
   var importJson;
   var importPng;
 
+  var maxZoom = 2;
+  var zoom = maxZoom;
   var tileSize = 40;
+  
   function positionCss(x, y) {
     return -x*tileSize + 'px ' + -y*tileSize + 'px';
   }
@@ -481,7 +484,7 @@ $(function() {
 
 
     for (var x=0; x<width; x++) {
-      row += "<div class='tileBackground'><div class='tile'><div class='selectionIndicator'></div><div class='potentialHighlight'></div></div></div>";
+      row += "<div class='tileBackground'><div class='tile nestedSquare'><div class='selectionIndicator nestedSquare'></div><div class='potentialHighlight nestedSquare'></div></div></div>";
     }
     row += "</div>"
     for (var y=0; y<height; y++) {
@@ -504,6 +507,7 @@ $(function() {
 
     $('#resizeWidth').val(width);
     $('#resizeHeight').val(height);
+    showZoom();
   }
 
   (function() {
@@ -980,8 +984,6 @@ $(function() {
     }
   }
   
-  var maxZoom = 2;
-  var zoom = maxZoom;
   $('#zoomIn').click(function() {
     zoom = Math.min(maxZoom, zoom+1);
     showZoom();
