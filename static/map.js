@@ -18,6 +18,7 @@ $(function() {
     this.logicFn = extra&&extra.logicFn;
     this.image = extra&&extra.image;
     this.rgb = r | (g<<8) | (b<<16);
+    this.opposite = this; // What it switches to when mirrored
   }
   TileType.prototype.positionCss = function() {
     return positionCss(this.sheetX, this.sheetY)
@@ -440,7 +441,7 @@ $(function() {
   }
 
   var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType,
-    redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType;
+    redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType;
   var tileTypes = [
     floorType = new TileType('floor', 2,2, 212,212,212),
     emptyType = new TileType('empty', 0,1, 0,0,0),
@@ -450,10 +451,10 @@ $(function() {
     bombType=new TileType('bomb', 6,5, 255,128,0),
     new TileType('powerup', 7,8, 0,255,0),
     new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
-    new TileType('redSpeedpad', 0,0, 255,115,115, {image: 'speedpadred'}),
-    new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
-    new TileType('blueFloor', 3,2 , 187,184,221),
-    new TileType('redFloor', 3,1, 220,186,186),
+    blueSpeedpadType = new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
+    redSpeedPadType = new TileType('redSpeedpad', 0,0, 255,115,115, {image: 'speedpadred'}),
+    redFloorType = new TileType('redFloor', 3,1, 220,186,186),
+    blueFloorType = new TileType('blueFloor', 3,2 , 187,184,221),
     offFieldType = new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
     onFieldType = new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
     redFieldType = new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
@@ -464,6 +465,16 @@ $(function() {
     redSpawnType = new TileType('redSpawn', 6,2, 155,0,0),
     blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155)
   ]
+  function areOpposites(t1, t2) {
+    t1.opposite = t2;
+    t2.opposite = t1; 
+  }
+  areOpposites(redSpeedPadType, blueSpeedpadType);
+  areOpposites(redFloorType, blueFloorType);
+  areOpposites(redFieldType, blueFieldType);
+  areOpposites(redFlagType, blueFlagType);
+  areOpposites(redSpawnType, blueSpawnType);
+  
 
   function Tile(options, elem) {
     this.set(options);
@@ -607,24 +618,9 @@ $(function() {
   var potentialSymmetryTiles = []; // these are tiles that will oppositely colored
 
 
-  function getOppositeType(type) {
-    if (type.name == 'blueSpeedpad') return $.grep(tileTypes, function(e) { return e.name === 'redSpeedpad' })[0];
-    if (type.name == 'redSpeedpad') return $.grep(tileTypes, function(e) { return e.name === 'blueSpeedpad' })[0];
-    if (type.name == 'blueFloor') return $.grep(tileTypes, function(e) { return e.name === 'redFloor' })[0];
-    if (type.name == 'redFloor') return $.grep(tileTypes, function(e) { return e.name === 'blueFloor' })[0];
-    if (type.name == 'redField') return $.grep(tileTypes, function(e) { return e.name === 'blueField' })[0];
-    if (type.name == 'blueField') return $.grep(tileTypes, function(e) { return e.name === 'redField' })[0];
-    if (type.name == 'redFlag') return $.grep(tileTypes, function(e) { return e.name === 'blueFlag' })[0];
-    if (type.name == 'blueFlag') return $.grep(tileTypes, function(e) { return e.name === 'redFlag' })[0];
-    if (type.name == 'redSpawn') return $.grep(tileTypes, function(e) { return e.name === 'blueSpawn' })[0];
-    if (type.name == 'blueSpawn') return $.grep(tileTypes, function(e) { return e.name === 'redSpawn' })[0];
-
-    return type;
-  }
   function applyPotentials() {
-    var oppositeType = getOppositeType(brushTileType);
     $.each(potentialSymmetryTiles, function(key, tile) {
-      tile.setType(oppositeType);
+      tile.setType(brushTileType.opposite);
     });
     $.each(potentialTiles, function(key, tile) {
       tile.setType(brushTileType);
@@ -1037,6 +1033,16 @@ $(function() {
   $('#resize').click(function() {
     var width = parseInt($('#resizeWidth').val(), 10);
     var height = parseInt($('#resizeHeight').val(), 10);
+
+    if (width > 50 || height > 50) {
+      alert('Max width/height is 50 (for now).')
+      width = Math.min(50, width);
+      height = Math.min(50, height);
+    } else if ( width < 1 || height < 1) {
+      alert('Min width/height is 1.');
+      width = Math.max(1, width);
+      height = Math.max(1, height);
+    }
     resizeTo(width, height);
   });
   
