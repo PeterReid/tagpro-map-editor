@@ -115,17 +115,32 @@ $(function() {
         lineTiles.push({x: x0, y: yi});
       }
 
+    } else if (deltaY == 0) {
+      var left = Math.min(x0, x1);
+      var right = Math.max(x0, x1);
+      for (var xi = left; xi <= right; xi++) {
+        lineTiles.push({x: xi, y: y0});
+      }
+
     } else {
       var slope = deltaY / deltaX;
       var intercept;
       var intercept = y0 - slope * x0;
 
-
-      var left = Math.min(x0, x1);
-      var right = Math.max(x0, x1);
-      for (var xi = left; xi <= right; xi++) {
-        var y = slope * xi + intercept;
-        lineTiles.push({x: xi, y: Math.round(y)});
+      if (Math.abs(slope) <= 1) {
+        var left = Math.min(x0, x1);
+        var right = Math.max(x0, x1);
+        for (var xi = left; xi <= right; xi++) {
+          var y = slope * xi + intercept;
+          lineTiles.push({x: xi, y: Math.round(y)});
+        }
+      } else {
+        var low = Math.min(y0, y1);
+        var high = Math.max(y0, y1);
+        for (var yi = low; yi <= high; yi++) {
+          var x = (yi-intercept) / slope;
+          lineTiles.push({x: Math.round(x), y: yi});
+        }
       }
     }
 
