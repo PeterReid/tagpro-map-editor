@@ -22,6 +22,7 @@ $(function() {
   TileType.prototype.drawOn = function($elem, tile) {
     var styleBgColor = '';
     var styleUrl = 'url("' + (this.image || 'default-skin') + '.png")';
+    var styleBackgroundSize = this.image ? (5*tileSize+'px ' + tileSize + 'px') : (13*tileSize + 'px ' + 9*tileSize + 'px');
     if (this.name == 'empty') {
       styleBgColor = 'black';
       styleUrl = '';
@@ -29,6 +30,10 @@ $(function() {
     if (styleBgColor != $elem.styleBgColor) {
       $elem.css('background-color', styleBgColor);
       $elem.styleBgColor = styleBgColor;
+    }
+    if (styleBackgroundSize != $elem.styleBackgroundSize) {
+      $elem.css('background-size', styleBackgroundSize);
+      $elem.styleBackgroundSize = styleBackgroundSize;
     }
     if (styleUrl != $elem.styleUrl) {
       $elem.css('background-image', styleUrl)
@@ -400,6 +405,9 @@ $(function() {
     if (elem) {
       this.elem = elem;
       this.setType(options.type, true);
+      this.background = elem.parent();
+      this.selectionIndicator = elem[0].children[0];
+      this.affectedIndicator = elem[0].children[1];
     }
   }
   Tile.prototype.set = function(options) {
@@ -941,7 +949,48 @@ $(function() {
     var height = parseInt($('#resizeHeight').val(), 10);
     resizeTo(width, height);
   });
-
+  
+  function showZoom() {
+    tileSize = [10,20,40][zoom];
+    var sizeCss = tileSize + 'px';
+    var singleTileBackgroundSize = sizeCss + ' ' + sizeCss;
+    
+    function applySize(e) {
+      e.style.width = e.style.height = sizeCss;
+    }
+    
+    for (var x=0; x<tiles.length; x++) {
+      for (var y=0; y<tiles[0].length; y++) {
+        var tile = tiles[x][y];
+        var typeIndicator = tile.elem[0];
+        var bg = typeIndicator.parentNode;
+        if (x==0) {
+          var row = bg.parentNode;
+          row.style.height = sizeCss;
+        }
+        applySize(tile.affectedIndicator);
+        applySize(tile.selectionIndicator);
+        tile.selectionIndicator.style.backgroundSize = singleTileBackgroundSize;
+        applySize(tile.elem[0]);
+        applySize(tile.background[0]);
+        
+        tile.type.drawOn(tile.elem, tile);
+        floorType.drawOn(tile.background, null);
+      }
+    }
+  }
+  
+  var maxZoom = 2;
+  var zoom = maxZoom;
+  $('#zoomIn').click(function() {
+    zoom = Math.min(maxZoom, zoom+1);
+    showZoom();
+  });
+  $('#zoomOut').click(function() {
+    zoom = Math.max(0, zoom-1);
+    showZoom();
+  });
+  
   var savedPng = localStorage.getItem('png')
   var savedJson = localStorage.getItem('json')
   restoreFromPngAndJson(savedPng, savedJson);
