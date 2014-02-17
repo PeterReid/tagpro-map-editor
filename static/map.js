@@ -92,6 +92,53 @@ $(function() {
       return calculated;
     }
   });
+
+  function lineFn (x0, y0, x1, y1) {
+    var deltaX = x1 - x0;
+    var deltaY = y1 - y0;
+    var y = 0;
+
+    var lineTiles = [];
+
+    if (deltaX == 0) {
+      var low = Math.min(y0, y1);
+      var high = Math.max(y0, y1);
+      for (var yi = low; yi <= high; yi++) {
+        lineTiles.push({x: x0, y: yi});
+      }
+
+    } else {
+      var slope = deltaY / deltaX;
+      var intercept;
+      var intercept = y0 - slope * x0;
+
+
+      var left = Math.min(x0, x1);
+      var right = Math.max(x0, x1);
+      for (var xi = left; xi <= right; xi++) {
+        var y = slope * xi + intercept;
+        lineTiles.push({x: xi, y: Math.round(y)});
+      }
+    }
+
+    return lineTiles;
+  }
+  var lineAnchor = null;
+  var line = new Tool({
+    type: 'line',
+    calculateTiles: function(x,y) {
+      if (lineAnchor) {
+        var coordinates = lineFn(lineAnchor.x, lineAnchor.y, x, y);
+        var calculatedTiles = [];
+        for (var i = 0; i < coordinates.length; i++) {
+          calculatedTiles.push(tiles[coordinates[i].x][coordinates[i].y]);
+        }
+        return calculatedTiles;
+      } else {
+        return [tiles[x][y]];
+      }
+    }
+  })
   var fill = new Tool({
     type: 'applier',
     calculateTiles: function(x,y) {
@@ -380,10 +427,10 @@ $(function() {
     bombType=new TileType('bomb', 6,5, 255,128,0),
     new TileType('powerup', 7,8, 0,255,0),
     new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
-    new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
     new TileType('redSpeedpad', 0,0, 255,115,115, {image: 'speedpadred'}),
-    new TileType('redFloor', 3,1, 220,186,186),
+    new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
     new TileType('blueFloor', 3,2 , 187,184,221),
+    new TileType('redFloor', 3,1, 220,186,186),
     offFieldType = new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
     onFieldType = new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
     redFieldType = new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
@@ -595,7 +642,9 @@ $(function() {
 
     if (!selectedTool) return;
 
-    if (selectedTool.type == 'applier' && selectedTool.calculateTiles != function(){} ) {
+
+
+    if ((selectedTool.type == 'line' || selectedTool.type == 'applier') && selectedTool.calculateTiles != function(){} ) {
       var potentials = [], symmetryPotentials = [];
       potentials = selectedTool.calculateTiles.call(selectedTool, x,y);
       if (symmetry == 'Horizontal') {
@@ -616,7 +665,7 @@ $(function() {
 
       setPotentials(potentials, symmetryPotentials);
 //      console.log(x, y, potentialTiles);
-      if (mouseDown) {
+      if (mouseDown && selectedTool.type != 'line') {
         applyPotentials();
       }
     }
@@ -624,20 +673,29 @@ $(function() {
     })
     .on('mouseleave', '.tile', function(e) {
       potentialTiles = [];
+      potentialSymmetryTiles = [];
       clearPotentialHighlights();
 //      console.log('mouse left ', $(this).data('x'), $(this).data('y'));
     })
     .on('mousedown', '.tile', function(e) {
       if (e.which==1) {
+        var x = $(this).data('x');
+        var y = $(this).data('y');
         if (!controlDown) {
           mouseDown = true;
+
     //      selectedTool.down.call(selectedTool, x,y);
     //      selectedTool.drag.call(selectedTool, x,y);
           if (selectedTool.type == 'applier') {
             applyPotentials();
+          } else if (selectedTool.type == 'line') {
+            if (lineAnchor == null) {
+              lineAnchor = {x:x, y:y};
+            } else {
+              applyPotentials();
+              lineAnchor = null;
+            }
           } else if (selectedTool.type == 'special') {
-            var x = $(this).data('x');
-            var y = $(this).data('y');
             selectedTool.down.call(selectedTool, x,y);
             selectedTool.drag.call(selectedTool, x,y);
           }
@@ -788,6 +846,7 @@ $(function() {
 
   $('#toolPencil').data('tool', pencil);
   $('#toolBrush').data('tool', brush);
+  $('#toolLine').data('tool', line);
   $('#toolFill').data('tool', fill);
   $('#toolWire').data('tool', wire);
   $('.toolButton').click(function() {
