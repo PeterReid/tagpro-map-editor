@@ -131,12 +131,12 @@ $(function() {
 
     return lineTiles;
   }
-  var lineAnchor = null;
+
   var line = new Tool({
     type: 'line',
-    calculateTiles: function(x,y) {
+    calculateTiles: function(x,y, laX,laY) {
       if (lineAnchor) {
-        var coordinates = lineFn(lineAnchor.x, lineAnchor.y, x, y);
+        var coordinates = lineFn(laX, laY, x, y);
         var calculatedTiles = [];
         for (var i = 0; i < coordinates.length; i++) {
           calculatedTiles.push(tiles[coordinates[i].x][coordinates[i].y]);
@@ -646,6 +646,9 @@ $(function() {
       }
   });
 
+
+  var lineAnchor = null;
+
   var mouseDown = false;
   $map.on('mouseenter', '.tile', function(e) {
 
@@ -658,25 +661,29 @@ $(function() {
 
     if ((selectedTool.type == 'line' || selectedTool.type == 'applier') && selectedTool.calculateTiles != function(){} ) {
       var potentials = [], symmetryPotentials = [];
-      potentials = selectedTool.calculateTiles.call(selectedTool, x,y);
+
+      var laX = lineAnchor ? lineAnchor.x : 0;
+      var laY = lineAnchor ? lineAnchor.y : 0;
+
+      potentials = selectedTool.calculateTiles.call(selectedTool, x,y, laX, laY);
       if (symmetry == 'Horizontal') {
-        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width - x - 1, y));
+        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y, width-laX-1, laY));
       }
       if (symmetry == 'Vertical') {
-       $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
+       $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1, laX, height-laY-1));
       }
       if (symmetry == '4-Way') {
        // we don't have a way of determining which direction they want the opposite color symmetry, so we don't worry about it
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y));
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1));
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y, width-laX-1, laY));
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1, laX, height-laY-1));
+       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1, width-laX-1, height-laY-1));
       }
       if (symmetry == 'Rotational') {
-        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1));
+        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1, width-laX-1, height-laY-1));
       }
 
       setPotentials(potentials, symmetryPotentials);
-//      console.log(x, y, potentialTiles);
+      console.log(x, y, potentialTiles, symmetryPotentials);
       if (mouseDown && selectedTool.type != 'line') {
         applyPotentials();
       }
@@ -703,9 +710,11 @@ $(function() {
           } else if (selectedTool.type == 'line') {
             if (lineAnchor == null) {
               lineAnchor = {x:x, y:y};
+              console.log('line anchor = ', lineAnchor);
             } else {
               applyPotentials();
               lineAnchor = null;
+              console.log('line anchor = ', null);
             }
           } else if (selectedTool.type == 'special') {
             selectedTool.down.call(selectedTool, x,y);
