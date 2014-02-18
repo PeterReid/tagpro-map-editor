@@ -600,17 +600,10 @@ $(function() {
   $('#toolPencil').addClass('selectedTool');
 
   var symmetry = 'None';
-  var $symmetryRadios = $('input:radio[name=symmetry]');
-  if ($symmetryRadios.is(':checked') === false) {
-    $symmetryRadios.filter('[value=None]').prop('checked', true);
-  }
 
-  $symmetryRadios.click(function() {
+  $('#symmetry').change(function() {
     console.log('Symmetry was ', symmetry);
-    var selectedSymmetry = $('input:radio[name=symmetry]:checked');
-    if (selectedSymmetry.length > 0) {
-      symmetry = selectedSymmetry.val();
-    }
+    symmetry = $(this).val();
     console.log('Symmetry is ', symmetry);
   });
 
