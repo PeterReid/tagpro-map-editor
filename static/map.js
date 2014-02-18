@@ -639,17 +639,18 @@ $(function() {
   var controlDown = false;
 
   $(document).keydown(function(e) {
-    if(e.which=="17") {
-      console.log('control down');
+    if(e.which==17) {
       controlDown = true;
     }
   }).keyup(function(e) {
-      if (e.which=="17") {
-        console.log('control up');
-        controlDown = false;
-      }
+    if (e.which==17) {
+      controlDown = false;
+    }
   });
-
+  
+  $(window).blur (function() { // If the user ctrl-tabs away, it won't the keyup won't register
+    controlDown = false;
+  })
 
   var lineAnchor = null;
 
