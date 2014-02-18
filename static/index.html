@@ -14,7 +14,7 @@
 <body>
 
 
-  <div class="col-md-2">
+  <div style="position:fixed;left:0;top:0;bottom:0;width:19em;overflow-y:scroll;">
     <div class="well">
       <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
       <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
@@ -33,8 +33,7 @@
         Author: <input type='text' id='author' />
       </div>
       <div>
-        Width: <input type='text' id='resizeWidth' />
-        Height: <input type='text' id='resizeHeight' />
+        Size: <input type='text' id='resizeWidth' size='2'/> by <input type='text' id='resizeHeight' size='2' />
         <input type='button' value='Resize' id='resize' />
       </div>
     </div>
@@ -65,28 +64,12 @@
         <button type="button" class="btn btn-primary">4-Way</button>
         <button type="button" class="btn btn-primary">Rotational</button>
       </div>
-
-      <!--<form>-->
-      <!--<input type="radio" name="symmetry" value="None">None-->
-      <!--<input type="radio" name="symmetry" value="Horizontal">Horizontal-->
-      <!--<input type="radio" name="symmetry" value="Vertical">Vertical-->
-      <!--<input type="radio" name="symmetry" value="4-Way">4-Way-->
-      <!--<input type="radio" name="symmetry" value="Rotational">Rotational-->
-    <!--</form>-->
     </div>
 
 
   </div>
-  <div class="col-md-10">
-    <div class="row">
-      <div class="well">
-        <!--<div style='height:30em;overflow-x: scroll;white-space: nowrap;' id='map'>-->
-          <div style='height:50em;overflow-x: scroll;white-space: nowrap;' id='map'>
+  <div style='position:fixed;top:0;bottom:0;right:0;left:19em;overflow: scroll;white-space: nowrap;' id='map'>
 
-      </div>
-
-      </div>
-    </div>
   </div>
 
 
