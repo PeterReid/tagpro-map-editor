@@ -14,7 +14,7 @@
 <body>
 
 
-  <div style="position:fixed;left:0;top:0;bottom:0;width:19em;overflow-y:scroll;">
+  <div style="position:fixed;left:0;top:0;bottom:0;width:23em;overflow-y:scroll;">
     <div class="well">
       <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
       <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
@@ -42,33 +42,42 @@
 
     </div>
     <div class="well">
-      <a href='#' id='toolPencil' class='toolButton'>Pencil</a>
-      <a href='#' id='toolBrush' class='toolButton'>Brush</a>
-      <a href='#' id='toolLine' class='toolButton'>Line</a>
-      <a href='#' id='toolFill' class='toolButton'>Fill</a>
-      <a href='#' id='toolWire' class='toolButton'>Wire</a>
-      |
-      <a href='#' id='undo'>Undo</a>
-      <a href='#' id='redo'>Redo</a>
-      |
-      <input type='button' value='Zoom In!' id='zoomIn' />
-      <input type='button' value='Zoom Out!' id='zoomOut' />
-    </div>
-    <div class="well">
-      Symmetry
-      <br>
-      <select id='symmetry'>
-        <option>None</option>
-        <option>Horizontal</option>
-        <option>Vertical</option>
-        <option>4-Way</option>
-        <option>Rotational</option>
-      </select>
+
+      <div id='tools' class="btn-group" style="margin: 5px" role="toolbar">
+        <button id='toolPencil' type="button" class="btn btn-default" title="Pencil Tool - Click to paint a single pixel."><span class="glyphicon glyphicon-pencil"></span></button>
+        <button id='toolBrush' type="button" class="btn btn-default" title="Brush Tool - Click to paint a 3x3 area."><span class="glyphicon glyphicon-th-large"></span></button>
+        <button id='toolLine' type="button" class="btn btn-default" title="Line Tool - Click to start a line. Click again to complete it."><span class="glyphicon glyphicon-arrow-right"></span></button>
+        <button id='toolFill' type="button" class="btn btn-default" title="Fill Tool - Click to fill a contiguous area."><span class="glyphicon glyphicon-tint"></span></button>
+        <button id='toolWire' type="button" class="btn btn-default" title="Wire Tool = Click to select an emitter (a button or portal). Click on the receiver(s) (gates, bombs, portals) to complete the link."><span class="glyphicon glyphicon-wrench"></span></button>
+      </div>
+
+      <div id='undoRedo' class="btn-group" style="margin: 5px" role="toolbar">
+        <button id='undo' type="button" class="btn btn-default" title="Undo"><span class="glyphicon glyphicon-chevron-left"></span></button>
+        <button id='redo' type="button" class="btn btn-default" title="Redo"><span class="glyphicon glyphicon-chevron-right"></span></button>
+      </div>
+
+      <div id='zoom' class='btn-group' style="margin: 5px" role="toolbar">
+        <button id='zoomOut' type="button" class="btn btn-default" title="Zoom Out"><span class="glyphicon glyphicon-zoom-out"></span></button>
+        <button id='zoomIn' type="button" class="btn btn-default" title="Zoom In"><span class="glyphicon glyphicon-zoom-in"></span></button>
+      </div>
+
+      <div style="margin: 5px">
+        Symmetry:
+        <select id='symmetry'>
+          <option>None</option>
+          <option>Horizontal</option>
+          <option>Vertical</option>
+          <option>4-Way</option>
+          <option>Rotational</option>
+        </select>
+      </div>
+
+
     </div>
 
 
   </div>
-  <div style='position:fixed;top:0;bottom:0;right:0;left:19em;overflow: scroll;white-space: nowrap;' id='map'>
+  <div style='position:fixed;top:0;bottom:0;right:0;left:23em;overflow: scroll;white-space: nowrap;' id='map'>
 
   </div>
 

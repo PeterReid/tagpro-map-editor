@@ -596,8 +596,6 @@ $(function() {
     $('#author').val('Anonymous');
   })();
 
-  var selectedTool = pencil;
-  $('#toolPencil').addClass('selectedTool');
 
   var symmetry = 'None';
 
@@ -875,14 +873,18 @@ $(function() {
   $('#toolLine').data('tool', line);
   $('#toolFill').data('tool', fill);
   $('#toolWire').data('tool', wire);
-  $('.toolButton').click(function() {
+  $('#tools .btn').click(function() {
     selectedTool.unselect.call(selectedTool);
-    $('.toolButton').removeClass('selectedTool');
-    $(this).addClass('selectedTool');
+    $('#tools .btn').removeClass('active');
+    $(this).toggleClass('active');
     selectedTool = $(this).data('tool');
     selectedTool.select.call(selectedTool);
     potentialTiles = [];
   })
+
+  var selectedTool = pencil;
+  $('#toolPencil').toggleClass("active");
+//  $('#toolPencil').trigger('click');
 
   $('#undo').click(undo);
   $('#redo').click(redo);
