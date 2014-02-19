@@ -20,7 +20,7 @@ div.nestedSquare {
 div.tileBackground {
     width:40px;
     height:40px;
-    background-image: url("default-skin.png");
+    background-image: url("../default-skin.png");
     display:inline-block;
     background-position: -80px -80px;
     position:relative;
@@ -28,13 +28,13 @@ div.tileBackground {
 div.selectionIndicator {
     width:40px;
     height:40px;
-    background-image: url("selected.png");
+    background-image: url("../selected.png");
     display:none;
 }
 div.tileTypeSelectionIndicator {
     width:40px;
     height:40px;
-    background-image: url("selected.png");
+    background-image: url("../selected.png");
     display:none;
 }
 div.potentialHighlight {
