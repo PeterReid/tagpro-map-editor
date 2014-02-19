@@ -418,13 +418,13 @@ $(function() {
     }
   }
 
+  function enable($elem, enabled) {
+    if (enabled) $elem.removeAttr('disabled');
+    else $elem.attr('disabled', 'disabled')
+  }
   function enableUndoRedoButtons() {
-    function enableIfHas($elem, steps) {
-      if (steps.length) $elem.removeAttr('disabled');
-      else $elem.attr('disabled', 'disabled')
-    }
-    enableIfHas($('#undo'), undoSteps);
-    enableIfHas($('#redo'), redoSteps);
+    enable($('#undo'), undoSteps.length);
+    enable($('#redo'), redoSteps.length);
   }
   function undo() {
     moveChange(undoSteps, redoSteps);
@@ -1174,14 +1174,21 @@ $(function() {
     }
   }
   
+  function enableZoomButtons() {
+    enable($('#zoomIn'), zoom<maxZoom);
+    enable($('#zoomOut'), zoom>0);
+  }
   $('#zoomIn').click(function() {
     zoom = Math.min(maxZoom, zoom+1);
     showZoom();
+    enableZoomButtons();
   });
   $('#zoomOut').click(function() {
     zoom = Math.max(0, zoom-1);
     showZoom();
+    enableZoomButtons();
   });
+  enableZoomButtons();
   
   var savedPng = localStorage.getItem('png')
   var savedJson = localStorage.getItem('json')
