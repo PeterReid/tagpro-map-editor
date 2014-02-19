@@ -176,7 +176,7 @@ $(function() {
 
       var toChange = [ tiles[x][y] ];
 
-      var changed = [ new TileState(tiles[x][y]) ];
+      var changed = [ new TileState(tiles[x][y], {type:brushTileType}) ];
       var inChanged = {};
       while (toChange.length > 0) {
 
@@ -376,6 +376,7 @@ $(function() {
     if (step) {
       undoSteps.push(step);
       redoSteps = [];
+      enableUndoRedoButtons();
     }
   }
   
@@ -417,11 +418,21 @@ $(function() {
     }
   }
 
+  function enable($elem, enabled) {
+    if (enabled) $elem.removeAttr('disabled');
+    else $elem.attr('disabled', 'disabled')
+  }
+  function enableUndoRedoButtons() {
+    enable($('#undo'), undoSteps.length);
+    enable($('#redo'), redoSteps.length);
+  }
   function undo() {
     moveChange(undoSteps, redoSteps);
+    enableUndoRedoButtons();
   }
   function redo() {
     moveChange(redoSteps, undoSteps);
+    enableUndoRedoButtons();
   }
 
   function xy(pt) {
@@ -607,7 +618,7 @@ $(function() {
     showZoom();
   }
 
-  (function() {
+  function clearMap() {
     var emptyTypes = [];
     for (var x=0;x<20;x++) {
       var col = emptyTypes[x] = [];
@@ -616,10 +627,12 @@ $(function() {
       }
     }
     buildTilesWith(emptyTypes);
+    savePoint();
+    clearHistory();
     $('#mapName').val('Untitled');
     $('#author').val('Anonymous');
-  })();
-
+  };
+  clearMap();
 
   var symmetry = 'None';
 
@@ -731,6 +744,10 @@ $(function() {
   $(document).keydown(function(e) {
     if(e.which==17) {
       controlDown = true;
+    } else if (e.which==90) { //z
+      undo();
+    } else if (e.which==89) { //y
+      redo();
     }
   }).keyup(function(e) {
     if (e.which==17) {
@@ -1025,7 +1042,7 @@ $(function() {
 
     return false;
   };
-  function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight) {
+  function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight, doHistoryClear) {
     var canvas = document.getElementById('importCanvas');
     var ctx = canvas.getContext('2d');
     var json = JSON.parse(jsonString);
@@ -1097,15 +1114,21 @@ $(function() {
       }
 
       savePoint();
+      if (doHistoryClear) clearHistory();
     }
     img.src = pngBase64;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
+  }
+  
+  function clearHistory() {
+    undoSteps = redoSteps = []
+    enableUndoRedoButtons();
   }
 
   $('#import').click(function() {
     if (importPng && importJson) {
       restoreFromPngAndJson(
         importPng,
-        importJson);
+        importJson, undefined, undefined, true);
     } else {
       alert('Please drag and drop a PNG and a JSON to import onto their receptacles.')
     }
@@ -1118,7 +1141,7 @@ $(function() {
     restoreFromPngAndJson(png, json, width, height);
   }
 
-  $('#resize').click(function() {
+  $('#resize').click(function(e) {
     var width = parseInt($('#resizeWidth').val(), 10);
     var height = parseInt($('#resizeHeight').val(), 10);
 
@@ -1132,6 +1155,7 @@ $(function() {
       height = Math.max(1, height);
     }
     resizeTo(width, height);
+    e.preventDefault();
   });
   
   function showZoom() {
@@ -1164,16 +1188,36 @@ $(function() {
     }
   }
   
+  $('#clear').click(function() {
+    if (confirm('Are you sure you want to clear the map?')) {
+      clearMap();
+    }
+  });
+  
+  function enableZoomButtons() {
+    enable($('#zoomIn'), zoom<maxZoom);
+    enable($('#zoomOut'), zoom>0);
+  }
   $('#zoomIn').click(function() {
     zoom = Math.min(maxZoom, zoom+1);
     showZoom();
+    enableZoomButtons();
   });
   $('#zoomOut').click(function() {
     zoom = Math.max(0, zoom-1);
     showZoom();
+    enableZoomButtons();
   });
+  enableZoomButtons();
+  
+  $('#dropHelp').click(function() {
+    alert("Importing Map:\n" +
+      "Drag a .png file and a .json file from your file manager onto their respective squares. When both are added, hit Import to apply them to the current map.\n\n" +
+      "Exporting Map:\n" +
+      "Hit Export. The .png and .json files can then be dragged or clicked from their respective squares.")
+  })
   
   var savedPng = localStorage.getItem('png')
   var savedJson = localStorage.getItem('json')
-  restoreFromPngAndJson(savedPng, savedJson);
+  restoreFromPngAndJson(savedPng, savedJson, undefined, undefined, true);
 });
