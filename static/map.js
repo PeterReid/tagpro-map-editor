@@ -618,7 +618,7 @@ $(function() {
     showZoom();
   }
 
-  (function() {
+  function clearMap() {
     var emptyTypes = [];
     for (var x=0;x<20;x++) {
       var col = emptyTypes[x] = [];
@@ -627,10 +627,14 @@ $(function() {
       }
     }
     buildTilesWith(emptyTypes);
+    savePoint();
+    undoSteps = [];
+    redoSteps = []
+    enableUndoRedoButtons();
     $('#mapName').val('Untitled');
     $('#author').val('Anonymous');
-  })();
-
+  };
+  clearMap();
 
   var symmetry = 'None';
 
@@ -1177,6 +1181,12 @@ $(function() {
       }
     }
   }
+  
+  $('#clear').click(function() {
+    if (confirm('Are you sure you want to clear the map?')) {
+      clearMap();
+    }
+  });
   
   function enableZoomButtons() {
     enable($('#zoomIn'), zoom<maxZoom);
