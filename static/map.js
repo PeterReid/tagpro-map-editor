@@ -441,16 +441,17 @@ $(function() {
   }
 
   var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType,
-    redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType;
+    redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType,
+    spikeType, powerupType, speedpadType;
   var tileTypes = [
     floorType = new TileType('floor', 2,2, 212,212,212),
     emptyType = new TileType('empty', 0,1, 0,0,0),
     wallType = new TileType('wall', 0,0, 120,120,120),
     switchType = new TileType('switch', 2,5, 185,122,87, {logicFn: exportSwitch}),
-    new TileType('spike', 2,3, 55,55,55),
-    bombType=new TileType('bomb', 6,5, 255,128,0),
-    new TileType('powerup', 7,8, 0,255,0),
-    new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
+    spikeType = new TileType('spike', 2,3, 55,55,55),
+    bombType = new TileType('bomb', 6,5, 255,128,0),
+    powerupType = new TileType('powerup', 7,8, 0,255,0),
+    speedpadType = new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
     blueSpeedpadType = new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
     redSpeedPadType = new TileType('redSpeedpad', 0,0, 255,115,115, {image: 'speedpadred'}),
     redFloorType = new TileType('redFloor', 3,1, 220,186,186),
@@ -856,15 +857,27 @@ $(function() {
     })
   }
 
-  $.each(tileTypes, function(idx, type) {
-    var $button = $("<div class='tileBackground tilePaletteOption'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
-    $button.data('tileType', type);
-    type.drawOn($button.find('.tile'));
-    $button.click('click', function() {
-      setBrushTileType(type);
+  var paletteRows = [
+    [emptyType, floorType, wallType],
+    [redFlagType, blueFlagType, redSpawnType, blueSpawnType],
+    [speedpadType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType],
+    [switchType, offFieldType, onFieldType, redFieldType, blueFieldType],
+    [bombType, spikeType, powerupType, portalType]
+  ]
+
+  $.each(paletteRows, function(rowIdx, row) {
+    var $rowDiv = $("<div></div>");
+    $.each(row, function(cellIdx, type) {
+      var $button = $("<div class='tileBackground tilePaletteOption'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
+      $button.data('tileType', type);
+      type.drawOn($button.find('.tile'));
+      $button.click('click', function() {
+        setBrushTileType(type);
+      });
+      $rowDiv.append($button);
     });
-    $palette.append($button);
-  });
+    $palette.append($rowDiv);
+  })
 
   $('.tileTypeSelectionIndicator:first').css('display', 'inline-block');
 
