@@ -558,7 +558,7 @@ $(function() {
     redFlagType = new TileType('redFlag', 8,0, 255,0,0, "Red Flag"),
     blueFlagType = new TileType('blueFlag', 9,0, 0,0,255, "Blue Flag"),
     redSpawnType = new TileType('redSpawn', 6,2, 155,0,0, "Red Spawn Tile - Red balls will spawn within a certain radius of this tile."),
-    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain readius of this tile.")
+    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain radius of this tile.")
   ]
   function areOpposites(t1, t2) {
     t1.opposite = t2;
