@@ -16,16 +16,18 @@
 
   <div style="position:fixed;left:0;top:0;bottom:0;width:23em;overflow-y:scroll;">
     <div class="well">
-      <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
-      <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
-
-      <div>
-        <input type='button' value='Import' id='import' />
-        <input type='button' value='Export!' id='export' />
+      <div class="panel panel-body">
+        <span class="panel-title">Drop Area</span>
+        <a class='dropArea' draggable="true" id='pngDrop' download="map.png" href='#'>PNG</a>
+        <a class='dropArea' draggable="true" id='jsonDrop' download="map.json" href='#'>JSON</a>
       </div>
-      <input type='button' value='Save!' id='save' />
-      <input type='button' value='Test!' id='test' />
+      <div class="btn-group">
+        <button id='import' class='btn btn-default' title="Import map from drop area."><span class="glyphicon glyphicon-import"></span> Import</button>
+        <button id='export' class='btn btn-default' title="Export map to drop area."><span class="glyphicon glyphicon-export"></span> Export</button>
+      </div>
+    </div>
 
+    <div class="well">
       <div>
         Name: <input type='text' id='mapName' />
       </div>
@@ -36,19 +38,24 @@
         Size: <input type='text' id='resizeWidth' size='2'/> by <input type='text' id='resizeHeight' size='2' />
         <input type='button' value='Resize' id='resize' />
       </div>
+      <div class="btn-group">
+        <button id='save' class='btn btn-default' title="Save map to cache."><span class="glyphicon glyphicon-save"></span> Save</button>
+        <button id='test' class='btn btn-default' title="Test map."><span class="glyphicon glyphicon-play"></span> Test</button>
+      </div>
     </div>
+
     <div class="well">
       <div id='palette'></div>
-
     </div>
+
     <div class="well">
 
       <div id='tools' class="btn-group" style="margin: 5px" role="toolbar">
-        <button id='toolPencil' type="button" class="btn btn-default" title="Pencil Tool - Click to paint a single pixel."><span class="glyphicon glyphicon-pencil"></span></button>
-        <button id='toolBrush' type="button" class="btn btn-default" title="Brush Tool - Click to paint a 3x3 area."><span class="glyphicon glyphicon-th-large"></span></button>
-        <button id='toolLine' type="button" class="btn btn-default" title="Line Tool - Click to start a line. Click again to complete it."><span class="glyphicon glyphicon-arrow-right"></span></button>
-        <button id='toolFill' type="button" class="btn btn-default" title="Fill Tool - Click to fill a contiguous area."><span class="glyphicon glyphicon-tint"></span></button>
-        <button id='toolWire' type="button" class="btn btn-default" title="Wire Tool = Click to select an emitter (a button or portal). Click on the receiver(s) (gates, bombs, portals) to complete the link."><span class="glyphicon glyphicon-wrench"></span></button>
+        <button id='toolPencil' class="btn btn-default" title="Pencil Tool - Click to paint a single pixel."><span class="glyphicon glyphicon-pencil"></span></button>
+        <button id='toolBrush' class="btn btn-default" title="Brush Tool - Click to paint a 3x3 area."><span class="glyphicon glyphicon-th-large"></span></button>
+        <button id='toolLine' class="btn btn-default" title="Line Tool - Click to start a line. Click again to complete it."><span class="glyphicon glyphicon-arrow-right"></span></button>
+        <button id='toolFill' class="btn btn-default" title="Fill Tool - Click to fill a contiguous area."><span class="glyphicon glyphicon-tint"></span></button>
+        <button id='toolWire' class="btn btn-default" title="Wire Tool = Click to select an emitter (a button or portal). Click on the receiver(s) (gates, bombs, portals) to complete the link."><span class="glyphicon glyphicon-wrench"></span></button>
       </div>
 
       <div id='undoRedo' class="btn-group" style="margin: 5px" role="toolbar">
