@@ -376,6 +376,7 @@ $(function() {
     if (step) {
       undoSteps.push(step);
       redoSteps = [];
+      enableUndoRedoButtons();
     }
   }
   
@@ -417,11 +418,21 @@ $(function() {
     }
   }
 
+  function enableUndoRedoButtons() {
+    function enableIfHas($elem, steps) {
+      if (steps.length) $elem.removeAttr('disabled');
+      else $elem.attr('disabled', 'disabled')
+    }
+    enableIfHas($('#undo'), undoSteps);
+    enableIfHas($('#redo'), redoSteps);
+  }
   function undo() {
     moveChange(undoSteps, redoSteps);
+    enableUndoRedoButtons();
   }
   function redo() {
     moveChange(redoSteps, undoSteps);
+    enableUndoRedoButtons();
   }
 
   function xy(pt) {
@@ -1094,6 +1105,8 @@ $(function() {
       }
 
       savePoint();
+      undoSteps = redoSteps = []
+      enableUndoRedoButtons();
     }
     img.src = pngBase64;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
   }
