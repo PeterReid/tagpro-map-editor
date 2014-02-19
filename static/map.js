@@ -988,7 +988,24 @@ $(function() {
     localStorage.setItem('json', JSON.stringify(makeLogic()));
   });
 
+  function isValidMap() {
+    var hasRedFlag = false;
+    var hasBlueFlag = false;
+    $.each(tiles, function(rowIdx, row) {
+      $.each(row, function(tileIdx, tile) {
+        if (tile.type.name == "redFlag") hasRedFlag = true;
+        if (tile.type.name == "blueFlag") hasBlueFlag = true;
+      });
+    });
+    return (hasRedFlag && hasBlueFlag);
+  }
+
   $('#test').click(function() {
+    var valid = isValidMap();
+    if (!valid) {
+      alert("A map requires at least one red flag and one blue flag to test.");
+      return;
+    }
     $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64()}, function(data) {
       if (data && data.location) {
         window.open(data.location);
