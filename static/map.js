@@ -635,8 +635,6 @@ $(function() {
   var $map = $('#map');
   var $palette = $('#palette');
 
-  var brushTileType = tileTypes[0];
-
   var height;
   var width;
   var $tiles;
@@ -1033,6 +1031,9 @@ $(function() {
     [switchType, offFieldType, onFieldType, redFieldType, blueFieldType],
     [bombType, spikeType, powerupType, portalType]
   ]
+
+  var brushTileType = paletteRows[0][0];
+  
 
   $.each(paletteRows, function(rowIdx, row) {
     var $rowDiv = $("<div></div>");
