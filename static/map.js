@@ -628,9 +628,7 @@ $(function() {
     }
     buildTilesWith(emptyTypes);
     savePoint();
-    undoSteps = [];
-    redoSteps = []
-    enableUndoRedoButtons();
+    clearHistory();
     $('#mapName').val('Untitled');
     $('#author').val('Anonymous');
   };
@@ -1041,7 +1039,7 @@ $(function() {
 
     return false;
   };
-  function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight) {
+  function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight, doHistoryClear) {
     var canvas = document.getElementById('importCanvas');
     var ctx = canvas.getContext('2d');
     var json = JSON.parse(jsonString);
@@ -1113,17 +1111,21 @@ $(function() {
       }
 
       savePoint();
-      undoSteps = redoSteps = []
-      enableUndoRedoButtons();
+      if (doHistoryClear) clearHistory();
     }
     img.src = pngBase64;//'https://mdn.mozillademos.org/files/5397/rhino.jpg';
+  }
+  
+  function clearHistory() {
+    undoSteps = redoSteps = []
+    enableUndoRedoButtons();
   }
 
   $('#import').click(function() {
     if (importPng && importJson) {
       restoreFromPngAndJson(
         importPng,
-        importJson);
+        importJson, undefined, undefined, true);
     } else {
       alert('Please drag and drop a PNG and a JSON to import onto their receptacles.')
     }
@@ -1214,5 +1216,5 @@ $(function() {
   
   var savedPng = localStorage.getItem('png')
   var savedJson = localStorage.getItem('json')
-  restoreFromPngAndJson(savedPng, savedJson);
+  restoreFromPngAndJson(savedPng, savedJson, undefined, undefined, true);
 });
