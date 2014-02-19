@@ -75,6 +75,8 @@ $(function() {
     this.type = fns.type || '';
     this.calculateTiles = fns.calculateTiles || function() {};
     this.down = fns.down || function() {};
+    this.speculateDrag = fns.speculateDrag;
+    this.speculateUp = fns.speculateUp;
     this.drag = fns.drag || function() {};
     this.up = fns.up || function() {};
     this.select = fns.select || function() {};
@@ -82,23 +84,23 @@ $(function() {
     this.stateChange = fns.stateChange || function() {}; // arbitrary state change happened -- redraw tool state if necessary
   }
   var pencil = new Tool({
-    type: 'applier',
-    calculateTiles: function(x,y) {
-      return [tiles[x][y]];
-    }
+    speculateDrag: function(x,y) {
+      return new UndoStep([
+        new TileState(tiles[x][y], {type:brushTileType})
+      ]);
+    },
   });
   var brush = new Tool({
-    type: 'applier',
-    calculateTiles: function(x,y) {
-      var calculated = [];
+    speculateDrag: function(x,y) {
+      var changes = [];
       for (var ix=x-1; ix<=x+1; ix++) {
         for (var iy=y-1; iy<=y+1; iy++) {
           if (ix>=0 && iy>=0 && ix<width && iy<height) {
-            calculated.push(tiles[ix][iy]);
+            changes.push(new TileState(tiles[ix][iy], {type:brushTileType}));
           }
         }
       }
-      return calculated;
+      return new UndoStep(changes);
     }
   });
 
@@ -149,34 +151,32 @@ $(function() {
   }
 
   var line = new Tool({
-    type: 'line',
-    calculateTiles: function(x,y, laX,laY) {
-      if (lineAnchor) {
-        var coordinates = lineFn(laX, laY, x, y);
-        var calculatedTiles = [];
-        for (var i = 0; i < coordinates.length; i++) {
-          calculatedTiles.push(tiles[coordinates[i].x][coordinates[i].y]);
-        }
-        return calculatedTiles;
-      } else {
-        return [tiles[x][y]];
+    down: function(x,y) {
+      this.downX = x;
+      this.downY = y;
+      console.log('down at ', x,y);
+    },
+    speculateUp: function(x,y) {
+      var coordinates = lineFn(this.downX===undefined?x:this.downX, this.downY===undefined?y:this.downY, x, y);
+      var calculatedTiles = [];
+      for (var i = 0; i < coordinates.length; i++) {
+        calculatedTiles.push(new TileState(tiles[coordinates[i].x][coordinates[i].y], {type: brushTileType}));
       }
+      return new UndoStep(calculatedTiles);
+    },
+    up: function(x,y) {
+      this.downX = undefined;
+      this.downY = undefined;
     }
   })
   var fill = new Tool({
-    type: 'applier',
-    calculateTiles: function(x,y) {
+    speculateUp: function(x,y) {
       var targetType = tiles[x][y].type;
-
-//      if (targetType == brushTileType) {
-//        // The brush matches the first tile, painting it would do nothing.
-//        return [];
-//      }
 
       var toChange = [ tiles[x][y] ];
 
-      var changed = [ tiles[x][y] ];
-
+      var changed = [ new TileState(tiles[x][y]) ];
+      var inChanged = {};
       while (toChange.length > 0) {
 
         var tempToChange = [];
@@ -186,9 +186,10 @@ $(function() {
             for (var iy=tile.y-1; iy<=tile.y+1; iy++) {
               if (Math.abs(tile.x-ix) + Math.abs(tile.y-iy) == 1&& ix>=0 && iy>=0 && ix<width && iy<height) {
                 var test = tiles[ix][iy];
-                if (test.type == targetType && $.inArray(test, changed) === -1) {
+                if (test.type == targetType && !inChanged[xy(test)]) {
                   tempToChange.push(test);
-                  changed.push(tiles[ix][iy]);
+                  changed.push(new TileState(test, {type: brushTileType}));
+                  inChanged[xy(test)] = true;
                 }
               }
             }
@@ -197,7 +198,7 @@ $(function() {
         toChange = tempToChange;
       }
 
-      return changed;
+      return new UndoStep(changed);
     }
   })
   var wire = new Tool({
@@ -269,9 +270,14 @@ $(function() {
     }
   }
 
-  function Point(source) {
-    this.x = source.x;
-    this.y = source.y;
+  function Point(sourceOrX, maybeY) {
+    if (maybeY) {
+      this.x = sourceOrX;
+      this.y = maybeY;
+    } else {
+      this.x = sourceOrX.x;
+      this.y = sourceOrX.y;
+    }
   }
   Point.cmp = function(a, b) {
     if (!a && !b) return 0;
@@ -280,16 +286,18 @@ $(function() {
     if (a.x != b.x) return a.x - b.x;
     return a.y - b.y;
   }
-  function TileState(source) {
-    this.x = source.x;
-    this.y = source.y;
-    this.type = source.type;
+  function TileState(source, changes) {
+    changes = changes || {};
+    this.x = changes.x || source.x 
+    this.y = changes.y || source.y;
+    this.type = changes.type || source.type;
     this.affected = [];
-    for (var key in source.affected||{}) {
+    for (var key in changes.affected||source.affected||{}) {
       this.affected.push(new Point(source.affected[key]));
     }
     this.affected.sort(Point.cmp);
-    this.destination = source.destination && new Point(source.destination);
+    var destTile = changes.destination || source.destination;
+    this.destination = destTile && new Point(destTile);
   }
   TileState.prototype.equals = function(other) {
     if (this.x!=other.x
@@ -359,11 +367,8 @@ $(function() {
       redoSteps = [];
     }
   }
-
-  function moveChange(fromSteps, toSteps) {
-    if (!fromSteps.length) return;
-
-    var step = fromSteps.splice(fromSteps.length-1, 1)[0];
+  
+  function applyStep(step) {
     var tileChanges = step.states;
     if (step.size) {
       var types = [];
@@ -385,13 +390,20 @@ $(function() {
       var change = tileChanges[i];
       change.restoreInto(tiles[change.x][change.y]);
     }
+    cleanDirtyWalls();
+    if (selectedTool) selectedTool.stateChange();
+  }
+
+  function moveChange(fromSteps, toSteps) {
+    if (!fromSteps.length) return;
+
+    var step = fromSteps.splice(fromSteps.length-1, 1)[0];
+    applyStep(step);
+    
     var step = recordStep();
     if (step) {
       toSteps.push(step);
     }
-
-    cleanDirtyWalls();
-    if (selectedTool) selectedTool.stateChange();
   }
 
   function undo() {
@@ -631,6 +643,73 @@ $(function() {
       tile.highlightWithPotential(true);
     } )
   }
+  
+  function transformPoint(pt, how) {
+    pt.x = pt.x*how[0] + (tiles.length-1)*how[1];
+    pt.y = pt.y*how[2] + (tiles[0].length-1)*how[3];
+  }
+  
+  var symmetryFns = {
+    'Horizontal': [
+      [1,0,  1,0],
+      [-1,1, 1,0]
+    ],
+    'Vertical': [
+      [1,0, 1,0],
+      [1,0, -1,1]
+    ],
+    '4-Way': [
+      [1,0, 1,0],
+      [-1,1, 1,0],
+      [1,0, -1,1],
+      [-1,1, -1,1]
+    ],
+    'Rotational': [
+      [1,0, 1,0],
+      [-1,1, -1,1]
+    ]
+  }
+  
+  function applySymmetry(step) {
+    var transforms = symmetryFns[symmetry];
+    var tileChangeMap = {};
+    if (transforms) {
+      step.states.forEach(function(state) {
+        transforms.forEach(function(transform) {
+          var transformedState = new TileState(state);
+          transformPoint(transformedState, transform);
+          if (transformedState.affected) {
+            transformedState.affected.forEach(function(pt) {
+              transformPoint(pt, transform);
+            });
+          }
+          if (transformedState.destination) {
+            transformPoint(transformedState.destination, transform);
+          }
+          tileChangeMap[xy(transformedState)] = transformedState;
+        });
+        
+      });
+    }
+    
+    
+    step.states.forEach(function(state) {
+      tileChangeMap[xy(state)] = state;
+    });
+    
+    step.states = [];
+    for (var key in tileChangeMap) {
+      step.states.push(tileChangeMap[key]);
+    }
+  }
+  
+  function setSpeculativeStep(step) {
+    applySymmetry(step);
+    $.each(step.states, function(idx, state) {
+      tiles[state.x][state.y].highlightWithPotential(true);
+    });
+  }
+  
   $map.mouseleave(function(e) {
     console.log('map left');
   });
@@ -661,9 +740,16 @@ $(function() {
 
     if (!selectedTool) return;
 
+    if (selectedTool.speculateDrag || selectedTool.speculateUp) { // should really test for speculatedDown || speculateDrag, maybe
+      var change = selectedTool.speculateDrag && selectedTool.speculateDrag(x,y);
+      if (!change) {
+        change = selectedTool.speculateUp && selectedTool.speculateUp(x,y)
+      }
+      setSpeculativeStep(change);
+      return;
+    }
 
-
-    if ((selectedTool.type == 'line' || selectedTool.type == 'applier') && selectedTool.calculateTiles != function(){} ) {
+    if ((selectedTool.type == 'applier') && selectedTool.calculateTiles != function(){} ) {
       var potentials = [], symmetryPotentials = [];
 
       var laX = lineAnchor ? lineAnchor.x : 0;
@@ -707,19 +793,17 @@ $(function() {
         if (!controlDown) {
           mouseDown = true;
 
+          if (selectedTool.speculateDrag || selectedTool.speculateUp) {
+            selectedTool.down(x,y)
+            if (selectedTool.speculateDrag) {//temp
+              var change = selectedTool.speculateDrag(x,y);
+              applySymmetry(change);
+              applyStep(change);
+            }
     //      selectedTool.down.call(selectedTool, x,y);
     //      selectedTool.drag.call(selectedTool, x,y);
-          if (selectedTool.type == 'applier') {
+          } else if (selectedTool.type == 'applier') {
             applyPotentials();
-          } else if (selectedTool.type == 'line') {
-            if (lineAnchor == null) {
-              lineAnchor = {x:x, y:y};
-              console.log('line anchor = ', lineAnchor);
-            } else {
-              applyPotentials();
-              lineAnchor = null;
-              console.log('line anchor = ', null);
-            }
           } else if (selectedTool.type == 'special') {
             selectedTool.down.call(selectedTool, x,y);
             selectedTool.drag.call(selectedTool, x,y);
@@ -729,21 +813,38 @@ $(function() {
       }
     })
     .on('mousemove', '.tile', function() {
-      if (selectedTool && selectedTool.type == 'special') {
-        var x = $(this).data('x');
-        var y = $(this).data('y');
+      var x = $(this).data('x');
+      var y = $(this).data('y');
+      if (selectedTool && mouseDown && (selectedTool.speculateDrag||selectedTool.speculateUp)) {
+        var change = selectedTool.speculateDrag && selectedTool.speculateDrag(x,y);
+        if (change) {
+          applySymmetry(change);
+          applyStep(change);
+        } else {
+          change = selectedTool.speculateUp && selectedTool.speculateUp(x,y);
+          setSpeculativeStep(change);
+        }
+      } else if (selectedTool && selectedTool.type == 'special') {
         selectedTool.drag.call(selectedTool, x,y);
         cleanDirtyWalls();
       }
     })
     .on('mouseup', '.tile', function(e) {
       if (e.which==1) {
+        var x = $(this).data('x');
+        var y = $(this).data('y');
         if (controlDown) {
-          var x = $(this).data('x');
-          var y = $(this).data('y');
           var eyeDropBrushType = tiles[x][y].type;
           setBrushTileType(eyeDropBrushType);
         } else {
+          if (selectedTool.speculateUp) {
+            var change = selectedTool.speculateUp(x,y);
+            applySymmetry(change);
+            applyStep(change);
+            console.log('up change: ', change);
+          }
+          selectedTool.up(x,y);
+        
           savePoint();
         }
         mouseDown = false;
