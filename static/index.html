@@ -82,12 +82,21 @@
     <div class="well">
 
       <div id='tools' class="btn-group" style="margin: 5px" role="toolbar">
-        <button id='toolPencil' class="btn btn-default" title="Pencil Tool - Click to paint a single pixel."><span class="glyphicon glyphicon-pencil"></span></button>
-        <button id='toolBrush' class="btn btn-default" title="Brush Tool - Click to paint a 3x3 area."><span class="glyphicon glyphicon-th-large"></span></button>
-        <button id='toolLine' class="btn btn-default" title="Line Tool - Click and drag to draw a line."><span class="glyphicon glyphicon-arrow-right"></span></button>
-        <button id='toolFill' class="btn btn-default" title="Fill Tool - Click to fill a contiguous area."><span class="glyphicon glyphicon-tint"></span></button>
-        <button id='toolWire' class="btn btn-default" title="Wire Tool = Click to select an emitter (a button or portal). Click on the receiver(s) (gates, bombs, portals) to complete the link."><span class="glyphicon glyphicon-wrench"></span></button>
+        <div class="btn-group">
+          <button id='toolPencil' class="btn btn-default" title="Pencil Tool - Click to paint a single pixel."><span class="glyphicon glyphicon-pencil"></span></button>
+          <button id='toolBrush' class="btn btn-default" title="Brush Tool - Click to paint a 3x3 area."><span class="glyphicon glyphicon-th-large"></span></button>
+        </div>
+        <div class="btn-group">
+          <button id='toolLine' class="btn btn-default" title="Line Tool - Click and drag to draw a line."><span class="glyphicon glyphicon-minus"></span></button>
+          <button id='toolRectFill' class="btn btn-default" title="Rectangle Fill Tool - Click and drag to draw a filled rectangle."><span class="glyphicon glyphicon-stop"></span></button>
+          <button id='toolRectOutline' class="btn btn-default" title="Rectangle Outline Tool - Click and drag to draw an outlined rectangle."><span class="glyphicon glyphicon-unchecked"></span></button>
+        </div>
+        <div class="btn-group">
+          <button id='toolFill' class="btn btn-default" title="Fill Tool - Click to fill a contiguous area."><span class="glyphicon glyphicon-tint"></span></button>
+          <button id='toolWire' class="btn btn-default" title="Wire Tool - Click to select an emitter (a button or portal). Click on the receiver(s) (gates, bombs, portals) to complete the link."><span class="glyphicon glyphicon-wrench"></span></button>
+        </div>
       </div>
+    </div>
 
       <div id='undoRedo' class="btn-group" style="margin: 5px" role="toolbar">
         <button id='undo' type="button" class="btn btn-default" title="Undo"><span class="glyphicon glyphicon-chevron-left"></span></button>
@@ -112,7 +121,6 @@
 
     </div>
 
-
     <div style='text-align:center'>
       <a href='https://github.com/PeterReid/tagpro-map-editor'>[Source]</a>
     </div>
@@ -122,42 +130,8 @@
 
   </div>
 
-  
-    <!---->
-  <!--<div class="row">-->
-    <!--<div class="col-md-2"><div class="well">File Options</div></div>-->
-    <!--<div class="col-md-10">-->
-      <!--<div class="row">-->
-        <!--<div class="col-md-10"><div class="well">Palette</div></div>-->
-      <!--</div>-->
-      <!--<div class="row">-->
-        <!--<div class="col-md-6"><div class="well">4</div></div>-->
-        <!--<div class="col-md-6"><div class="well">5</div></div>-->
-      <!--</div>-->
-    <!--</div>-->
-  <!--</div>-->
-  <!--<div class="row">-->
-    <!--<div class="col-md-2">-->
-      <!--<div class="well">6</div>-->
-    <!--</div>-->
-    <!--<div class="col-md-2">-->
-      <!--<div class="well">6</div>-->
-    <!--</div>-->
-    <!--<div class="col-md-2">-->
-      <!--<div class="well">6</div>-->
-    <!--</div>-->
-  <!--</div>-->
-
-
-
   <canvas width="200" height="200" id='importCanvas' style='display:none'></canvas>
 
-
-
-
-
-
   <script type="text/javascript" src="map.js"></script>
-
 
 </body></html>

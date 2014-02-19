@@ -170,6 +170,65 @@ $(function() {
       this.downY = undefined;
     }
   })
+
+
+  function rectFn (x0, y0, x1, y1, fill) {
+    var rectTiles = [];
+    var left = Math.min(x0, x1);
+    var right = Math.max(x0, x1);
+    var low = Math.min(y0, y1);
+    var high = Math.max(y0, y1);
+    for (var xi = left; xi <= right; xi++) {
+      for (var yi = low; yi <= high; yi++) {
+        var addTile = fill || xi == left || xi == right || yi == low || yi == high;
+        if (addTile) {
+          rectTiles.push({x: xi, y: yi});
+        }
+      }
+    }
+    return rectTiles;
+  }
+
+  var rectFill = new Tool({
+    down: function(x,y) {
+      this.downX = x;
+      this.downY = y;
+      console.log('down at ', x,y);
+    },
+    speculateUp: function(x,y) {
+      var coordinates = rectFn(this.downX===undefined?x:this.downX, this.downY===undefined?y:this.downY, x, y, true);
+      var calculatedTiles = [];
+      for (var i = 0; i < coordinates.length; i++) {
+        calculatedTiles.push(new TileState(tiles[coordinates[i].x][coordinates[i].y], {type: brushTileType}));
+      }
+      return new UndoStep(calculatedTiles);
+    },
+    up: function(x,y) {
+      this.downX = undefined;
+      this.downY = undefined;
+    }
+  })
+
+  var rectOutline = new Tool({
+    down: function(x,y) {
+      this.downX = x;
+      this.downY = y;
+      console.log('down at ', x,y);
+    },
+    speculateUp: function(x,y) {
+      var coordinates = rectFn(this.downX===undefined?x:this.downX, this.downY===undefined?y:this.downY, x, y, false);
+      var calculatedTiles = [];
+      for (var i = 0; i < coordinates.length; i++) {
+        calculatedTiles.push(new TileState(tiles[coordinates[i].x][coordinates[i].y], {type: brushTileType}));
+      }
+      return new UndoStep(calculatedTiles);
+    },
+    up: function(x,y) {
+      this.downX = undefined;
+      this.downY = undefined;
+    }
+  })
+
   var fill = new Tool({
     speculateUp: function(x,y) {
       var targetType = tiles[x][y].type;
@@ -980,6 +1039,8 @@ $(function() {
   $('#toolPencil').data('tool', pencil);
   $('#toolBrush').data('tool', brush);
   $('#toolLine').data('tool', line);
+  $('#toolRectFill').data('tool', rectFill);
+  $('#toolRectOutline').data('tool', rectOutline);
   $('#toolFill').data('tool', fill);
   $('#toolWire').data('tool', wire);
   $('#tools .btn').click(function() {
