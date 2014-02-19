@@ -1136,7 +1136,7 @@ $(function() {
     restoreFromPngAndJson(png, json, width, height);
   }
 
-  $('#resize').click(function() {
+  $('#resize').click(function(e) {
     var width = parseInt($('#resizeWidth').val(), 10);
     var height = parseInt($('#resizeHeight').val(), 10);
 
@@ -1150,6 +1150,7 @@ $(function() {
       height = Math.max(1, height);
     }
     resizeTo(width, height);
+    e.preventDefault();
   });
   
   function showZoom() {
