@@ -176,7 +176,7 @@ $(function() {
 
       var toChange = [ tiles[x][y] ];
 
-      var changed = [ new TileState(tiles[x][y]) ];
+      var changed = [ new TileState(tiles[x][y], {type:brushTileType}) ];
       var inChanged = {};
       while (toChange.length > 0) {
 
