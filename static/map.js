@@ -82,6 +82,8 @@ $(function() {
     this.select = fns.select || function() {};
     this.unselect = fns.unselect || function() {};
     this.stateChange = fns.stateChange || function() {}; // arbitrary state change happened -- redraw tool state if necessary
+    this.getState = fns.getState || function() {};
+    this.setState = fns.setState || function() {};
   }
   var pencil = new Tool({
     speculateDrag: function(x,y) {
@@ -210,32 +212,41 @@ $(function() {
     stateChange: function() {
       this.refreshHighlights();
     },
-    down: function(x,y) {
+    getState: function() {
+      console.log('storing state', this.selectedSwitch && xy(this.selectedSwitch))
+      return {selectedSwitch: this.selectedSwitch}
+    },
+    setState: function(state) {
+      this.selectedSwitch = state.selectedSwitch;
+      console.log('restored state', this.selectedSwitch && xy(this.selectedSwitch))
+    },
+    speculateUp: function(x,y) {
       var tile = tiles[x][y];
+      var change = null;
       if (tile.type == portalType) {
         if (this.selectedSwitch && this.selectedSwitch.type == portalType) {
-          mayHaveChanged(this.selectedSwitch);
-          this.selectedSwitch.destination = tile;
+          change = new TileState(this.selectedSwitch, {destination: tile})
+          console.log('making destination action to', xy(tile));
           this.selectedSwitch = null;
         } else {
           this.selectedSwitch = tile;
+          console.log('selected ', xy(this.selectedSwitch));
         }
-        this.refreshHighlights();
       } else if (tile.type == switchType) {
         this.selectedSwitch = tile;
-        this.refreshHighlights();
       } else if (this.selectedSwitch && this.selectedSwitch.type == switchType) {
         var affected = this.selectedSwitch.affected || ( this.selectedSwitch.affected={});
-        var key = x + ',' + y;
-        if (affected[key]) {
-          delete affected[key]
-          tile.highlight(false);
-        } else {
-          affected[key] = tile;
-          tile.highlight(true);
+        var affected = {};
+        for (var key in (this.selectedSwitch.affected||{})) {
+          affected[key] = this.selectedSwitch.affected[key];;
         }
-        mayHaveChanged(this.selectedSwitch);
+        var hitKey = xy(tile);
+        if (affected[hitKey]) delete affected[hitKey];
+        else affected[hitKey] = tile;
+        
+        change = new TileState(this.selectedSwitch, {affected: affected});
       }
+      return new UndoStep(change ? [change] : []);
     }
   });
   wire.refreshHighlights = function() {
@@ -292,8 +303,9 @@ $(function() {
     this.y = changes.y || source.y;
     this.type = changes.type || source.type;
     this.affected = [];
-    for (var key in changes.affected||source.affected||{}) {
-      this.affected.push(new Point(source.affected[key]));
+    var affectedMap = changes.affected || source.affected || {};
+    for (var key in affectedMap) {
+      this.affected.push(new Point(affectedMap[key]));
     }
     this.affected.sort(Point.cmp);
     var destTile = changes.destination || source.destination;
@@ -741,44 +753,15 @@ $(function() {
     if (!selectedTool) return;
 
     if (selectedTool.speculateDrag || selectedTool.speculateUp) { // should really test for speculatedDown || speculateDrag, maybe
+      var st = selectedTool.getState();
       var change = selectedTool.speculateDrag && selectedTool.speculateDrag(x,y);
       if (!change) {
         change = selectedTool.speculateUp && selectedTool.speculateUp(x,y)
       }
+      selectedTool.setState(st);
       setSpeculativeStep(change);
       return;
     }
-
-    if ((selectedTool.type == 'applier') && selectedTool.calculateTiles != function(){} ) {
-      var potentials = [], symmetryPotentials = [];
-
-      var laX = lineAnchor ? lineAnchor.x : 0;
-      var laY = lineAnchor ? lineAnchor.y : 0;
-
-      potentials = selectedTool.calculateTiles.call(selectedTool, x,y, laX, laY);
-      if (symmetry == 'Horizontal') {
-        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y, width-laX-1, laY));
-      }
-      if (symmetry == 'Vertical') {
-       $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1, laX, height-laY-1));
-      }
-      if (symmetry == '4-Way') {
-       // we don't have a way of determining which direction they want the opposite color symmetry, so we don't worry about it
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, y, width-laX-1, laY));
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, x, height-y-1, laX, height-laY-1));
-       $.merge(potentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1, width-laX-1, height-laY-1));
-      }
-      if (symmetry == 'Rotational') {
-        $.merge(symmetryPotentials, selectedTool.calculateTiles.call(selectedTool, width-x-1, height-y-1, width-laX-1, height-laY-1));
-      }
-
-      setPotentials(potentials, symmetryPotentials);
-      console.log(x, y, potentialTiles, symmetryPotentials);
-      if (mouseDown && selectedTool.type != 'line') {
-        applyPotentials();
-      }
-    }
-//      console.log('mouse entered ', $(this).data('x'), $(this).data('y'));
     })
     .on('mouseleave', '.tile', function(e) {
       potentialTiles = [];
@@ -799,6 +782,7 @@ $(function() {
               var change = selectedTool.speculateDrag(x,y);
               applySymmetry(change);
               applyStep(change);
+              selectedTool.stateChange();
             }
     //      selectedTool.down.call(selectedTool, x,y);
     //      selectedTool.drag.call(selectedTool, x,y);
@@ -820,8 +804,10 @@ $(function() {
         if (change) {
           applySymmetry(change);
           applyStep(change);
-        } else {
-          change = selectedTool.speculateUp && selectedTool.speculateUp(x,y);
+        } else if (selectedTool.speculateUp) {
+          var st = selectedTool.getState();
+          change = selectedTool.speculateUp(x,y);
+          selectedTool.setState(st);
           setSpeculativeStep(change);
         }
       } else if (selectedTool && selectedTool.type == 'special') {
@@ -841,6 +827,7 @@ $(function() {
             var change = selectedTool.speculateUp(x,y);
             applySymmetry(change);
             applyStep(change);
+            selectedTool.stateChange();
             console.log('up change: ', change);
           }
           selectedTool.up(x,y);
