@@ -9,7 +9,7 @@ $(function() {
   function positionCss(x, y) {
     return -x*tileSize + 'px ' + -y*tileSize + 'px';
   }
-  function TileType(name, sheetX, sheetY, r,g,b, extra) {
+  function TileType(name, sheetX, sheetY, r,g,b, toolTipText, extra) {
     this.name = name;
     this.sheetX = sheetX;
     this.sheetY = sheetY;
@@ -19,6 +19,7 @@ $(function() {
     this.image = extra&&extra.image;
     this.rgb = r | (g<<8) | (b<<16);
     this.opposite = this; // What it switches to when mirrored
+    this.toolTipText = toolTipText;
   }
   TileType.prototype.positionCss = function() {
     return positionCss(this.sheetX, this.sheetY)
@@ -537,27 +538,27 @@ $(function() {
     redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType,
     spikeType, powerupType, speedpadType;
   var tileTypes = [
-    emptyType = new TileType('empty', 0,1, 0,0,0),
-    floorType = new TileType('floor', 2,2, 212,212,212),
-    wallType = new TileType('wall', 0,0, 120,120,120),
-    switchType = new TileType('switch', 2,5, 185,122,87, {logicFn: exportSwitch}),
-    spikeType = new TileType('spike', 2,3, 55,55,55),
-    bombType = new TileType('bomb', 6,5, 255,128,0),
-    powerupType = new TileType('powerup', 7,8, 0,255,0),
-    speedpadType = new TileType('speedpad', 0,0, 255,255,0, {image: 'speedpad'}),
-    blueSpeedpadType = new TileType('blueSpeedpad', 0,0, 115,115,255, {image: 'speedpadblue'}),
-    redSpeedPadType = new TileType('redSpeedpad', 0,0, 255,115,115, {image: 'speedpadred'}),
-    redFloorType = new TileType('redFloor', 3,1, 220,186,186),
-    blueFloorType = new TileType('blueFloor', 3,2 , 187,184,221),
-    offFieldType = new TileType('offField', 10,1, 0,117,0, {logicFn: setFieldFn('off')}),
-    onFieldType = new TileType('onField', 10,2, 0,117,0, {logicFn: setFieldFn('on')}),
-    redFieldType = new TileType('redField', 10,3, 0,117,0, {logicFn: setFieldFn('red')}),
-    blueFieldType = new TileType('blueField', 10,4, 0,117,0, {logicFn: setFieldFn('blue')}),
-    portalType = new TileType('portal', 0,0, 202, 192,0, {image: 'portal', logicFn: exportPortal}),
-    redFlagType = new TileType('redFlag', 8,0, 255,0,0),
-    blueFlagType = new TileType('blueFlag', 9,0, 0,0,255),
-    redSpawnType = new TileType('redSpawn', 6,2, 155,0,0),
-    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155)
+    emptyType = new TileType('empty', 0,1, 0,0,0, "Background"),
+    floorType = new TileType('floor', 2,2, 212,212,212, "Tile"),
+    wallType = new TileType('wall', 0,0, 120,120,120, "Wall"),
+    switchType = new TileType('switch', 2,5, 185,122,87, "Button - Emits signals to gates and bombs.", {logicFn: exportSwitch}),
+    spikeType = new TileType('spike', 2,3, 55,55,55, "Spike"),
+    bombType = new TileType('bomb', 6,5, 255,128,0, "Bomb - Receives signals from switches."),
+    powerupType = new TileType('powerup', 7,8, 0,255,0, "Powerup"),
+    speedpadType = new TileType('speedpad', 0,0, 255,255,0, "Boost", {image: 'speedpad'}),
+    blueSpeedpadType = new TileType('blueSpeedpad', 0,0, 115,115,255, "Blue Team Boost", {image: 'speedpadblue'}),
+    redSpeedPadType = new TileType('redSpeedpad', 0,0, 255,115,115, "Red Team Boost", {image: 'speedpadred'}),
+    redFloorType = new TileType('redFloor', 3,1, 220,186,186, "Red Speed Tile - Increases speed for non-flag-carriers."),
+    blueFloorType = new TileType('blueFloor', 3,2, 187,184,221, "Blue Speed Tile - Increases speed for non-flag-carriers."),
+    offFieldType = new TileType('offField', 10,1, 0,117,0, "Gate - Default Off", {logicFn: setFieldFn('off')}),
+    onFieldType = new TileType('onField', 10,2, 0,117,0, "Gate - Default On", {logicFn: setFieldFn('on')}),
+    redFieldType = new TileType('redField', 10,3, 0,117,0, "Gate - Default Red", {logicFn: setFieldFn('red')}),
+    blueFieldType = new TileType('blueField', 10,4, 0,117,0, "Gate - Default Blue", {logicFn: setFieldFn('blue')}),
+    portalType = new TileType('portal', 0,0, 202, 192,0, "Portal - Link two portals using the wire tool.", {image: 'portal', logicFn: exportPortal}),
+    redFlagType = new TileType('redFlag', 8,0, 255,0,0, "Red Flag"),
+    blueFlagType = new TileType('blueFlag', 9,0, 0,0,255, "Blue Flag"),
+    redSpawnType = new TileType('redSpawn', 6,2, 155,0,0, "Red Spawn Tile - Red balls will spawn within a certain radius of this tile."),
+    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain readius of this tile.")
   ]
   function areOpposites(t1, t2) {
     t1.opposite = t2;
@@ -1038,7 +1039,7 @@ $(function() {
   $.each(paletteRows, function(rowIdx, row) {
     var $rowDiv = $("<div></div>");
     $.each(row, function(cellIdx, type) {
-      var $button = $("<div class='tileBackground tilePaletteOption'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
+      var $button = $("<div class='tileBackground tilePaletteOption' title = '" + type.toolTipText + "'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
       $button.data('tileType', type);
       type.drawOn($button.find('.tile'));
       $button.click('click', function() {
