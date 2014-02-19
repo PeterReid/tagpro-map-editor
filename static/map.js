@@ -1027,7 +1027,7 @@ $(function() {
   }
 
   var paletteRows = [
-    [emptyType, floorType, wallType],
+    [wallType, floorType, emptyType],
     [redFlagType, blueFlagType, redSpawnType, blueSpawnType],
     [speedpadType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType],
     [switchType, offFieldType, onFieldType, redFieldType, blueFieldType],
