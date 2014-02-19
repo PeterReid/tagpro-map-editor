@@ -960,6 +960,9 @@ $(function() {
       $button.data('tileType', type);
       type.drawOn($button.find('.tile'));
       $button.click('click', function() {
+        if (selectedTool == wire) {
+          $('#toolPencil').trigger('click');
+        }
         setBrushTileType(type);
       });
       $rowDiv.append($button);
