@@ -69,8 +69,6 @@ app.post('/test', function(req, res) {
     form.append('layout', fs.createReadStream('temp.png'));
     
     form.submit('http://tagpro-maptest.koalabeast.com/testmap', function(err, testRes) {
-      console.log(err)
-      if (testRes) console.log(testRes.headers);
       res.send(testRes.headers);
     });
     
