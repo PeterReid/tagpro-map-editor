@@ -742,6 +742,10 @@ $(function() {
   $(document).keydown(function(e) {
     if(e.which==17) {
       controlDown = true;
+    } else if (e.which==90) { //z
+      undo();
+    } else if (e.which==89) { //y
+      redo();
     }
   }).keyup(function(e) {
     if (e.which==17) {
