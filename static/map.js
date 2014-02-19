@@ -468,8 +468,8 @@ $(function() {
     redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType,
     spikeType, powerupType, speedpadType;
   var tileTypes = [
-    floorType = new TileType('floor', 2,2, 212,212,212),
     emptyType = new TileType('empty', 0,1, 0,0,0),
+    floorType = new TileType('floor', 2,2, 212,212,212),
     wallType = new TileType('wall', 0,0, 120,120,120),
     switchType = new TileType('switch', 2,5, 185,122,87, {logicFn: exportSwitch}),
     spikeType = new TileType('spike', 2,3, 55,55,55),
