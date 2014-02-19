@@ -73,10 +73,9 @@ $(function() {
 
   function Tool(fns) {
     this.type = fns.type || '';
-    this.calculateTiles = fns.calculateTiles || function() {};
     this.down = fns.down || function() {};
-    this.speculateDrag = fns.speculateDrag;
-    this.speculateUp = fns.speculateUp;
+    this.speculateDrag = fns.speculateDrag || function() {};
+    this.speculateUp = fns.speculateUp || function() {};
     this.drag = fns.drag || function() {};
     this.up = fns.up || function() {};
     this.select = fns.select || function() {};
@@ -659,26 +658,27 @@ $(function() {
   function transformPoint(pt, how) {
     pt.x = pt.x*how[0] + (tiles.length-1)*how[1];
     pt.y = pt.y*how[2] + (tiles[0].length-1)*how[3];
+    if (pt.type && how[4]) pt.type = pt.type.opposite;
   }
   
   var symmetryFns = {
     'Horizontal': [
       [1,0,  1,0],
-      [-1,1, 1,0]
+      [-1,1, 1,0, true]
     ],
     'Vertical': [
       [1,0, 1,0],
-      [1,0, -1,1]
+      [1,0, -1,1, true]
     ],
     '4-Way': [
       [1,0, 1,0],
-      [-1,1, 1,0],
-      [1,0, -1,1],
+      [-1,1, 1,0, true],
+      [1,0, -1,1, true],
       [-1,1, -1,1]
     ],
     'Rotational': [
       [1,0, 1,0],
-      [-1,1, -1,1]
+      [-1,1, -1,1, true]
     ]
   }
   
@@ -776,22 +776,14 @@ $(function() {
         if (!controlDown) {
           mouseDown = true;
 
-          if (selectedTool.speculateDrag || selectedTool.speculateUp) {
-            selectedTool.down(x,y)
-            if (selectedTool.speculateDrag) {//temp
-              var change = selectedTool.speculateDrag(x,y);
-              applySymmetry(change);
-              applyStep(change);
-              selectedTool.stateChange();
-            }
-    //      selectedTool.down.call(selectedTool, x,y);
-    //      selectedTool.drag.call(selectedTool, x,y);
-          } else if (selectedTool.type == 'applier') {
-            applyPotentials();
-          } else if (selectedTool.type == 'special') {
-            selectedTool.down.call(selectedTool, x,y);
-            selectedTool.drag.call(selectedTool, x,y);
+          selectedTool.down(x,y)
+          var change = selectedTool.speculateDrag(x,y);
+          if (change) {
+            applySymmetry(change);
+            applyStep(change);
+            selectedTool.stateChange();
           }
+          
           e.preventDefault();
         }
       }
@@ -799,7 +791,7 @@ $(function() {
     .on('mousemove', '.tile', function() {
       var x = $(this).data('x');
       var y = $(this).data('y');
-      if (selectedTool && mouseDown && (selectedTool.speculateDrag||selectedTool.speculateUp)) {
+      if (selectedTool && mouseDown) {
         var change = selectedTool.speculateDrag && selectedTool.speculateDrag(x,y);
         if (change) {
           applySymmetry(change);
@@ -808,11 +800,8 @@ $(function() {
           var st = selectedTool.getState();
           change = selectedTool.speculateUp(x,y);
           selectedTool.setState(st);
-          setSpeculativeStep(change);
+          if (change) setSpeculativeStep(change);
         }
-      } else if (selectedTool && selectedTool.type == 'special') {
-        selectedTool.drag.call(selectedTool, x,y);
-        cleanDirtyWalls();
       }
     })
     .on('mouseup', '.tile', function(e) {
@@ -823,12 +812,11 @@ $(function() {
           var eyeDropBrushType = tiles[x][y].type;
           setBrushTileType(eyeDropBrushType);
         } else {
-          if (selectedTool.speculateUp) {
-            var change = selectedTool.speculateUp(x,y);
+          var change = selectedTool.speculateUp(x,y);
+          if (change) {
             applySymmetry(change);
             applyStep(change);
             selectedTool.stateChange();
-            console.log('up change: ', change);
           }
           selectedTool.up(x,y);
         
