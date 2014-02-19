@@ -658,26 +658,27 @@ $(function() {
   function transformPoint(pt, how) {
     pt.x = pt.x*how[0] + (tiles.length-1)*how[1];
     pt.y = pt.y*how[2] + (tiles[0].length-1)*how[3];
+    if (pt.type && how[4]) pt.type = pt.type.opposite;
   }
   
   var symmetryFns = {
     'Horizontal': [
       [1,0,  1,0],
-      [-1,1, 1,0]
+      [-1,1, 1,0, true]
     ],
     'Vertical': [
       [1,0, 1,0],
-      [1,0, -1,1]
+      [1,0, -1,1, true]
     ],
     '4-Way': [
       [1,0, 1,0],
-      [-1,1, 1,0],
-      [1,0, -1,1],
+      [-1,1, 1,0, true],
+      [1,0, -1,1, true],
       [-1,1, -1,1]
     ],
     'Rotational': [
       [1,0, 1,0],
-      [-1,1, -1,1]
+      [-1,1, -1,1, true]
     ]
   }
   
