@@ -54,3 +54,6 @@ a.dropArea {
 a.selectedTool {
     background-color: red;
 }
+#resizeWidth, #resizeHeight {
+    padding-right: 0px;
+}

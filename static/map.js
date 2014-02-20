@@ -1225,10 +1225,13 @@ $(function() {
     var width = parseInt($('#resizeWidth').val(), 10);
     var height = parseInt($('#resizeHeight').val(), 10);
 
-    if (width > 50 || height > 50) {
-      alert('Max width/height is 50 (for now).')
-      width = Math.min(50, width);
-      height = Math.min(50, height);
+    if (width * height > 3600) {
+      if (!confirm('It\'s currently not possible to test maps larger than 3600 tiles.\nVery large maps can (will) lag your browser as well.\nAre you sure you want to resize?')) {
+        $('#resizeWidth').val(tiles.length);
+        $('#resizeHeight').val(tiles[0].length);
+        e.preventDefault();
+        return;
+      }
     } else if ( width < 1 || height < 1) {
       alert('Min width/height is 1.');
       width = Math.max(1, width);
