@@ -75,11 +75,21 @@
       </div>
     </div>
 
-    <div class="well">
+    <div class="well well-sm">
       <div id='palette'></div>
     </div>
 
-    <div class="well">
+    <div class="well well-sm">
+
+      <div id='undoRedo' class="btn-group" style="margin: 5px" role="toolbar">
+        <button id='undo' type="button" class="btn btn-default" title="Undo"><span class="glyphicon glyphicon-chevron-left"></span></button>
+        <button id='redo' type="button" class="btn btn-default" title="Redo"><span class="glyphicon glyphicon-chevron-right"></span></button>
+      </div>
+
+      <div id='zoom' class='btn-group' style="margin: 5px" role="toolbar">
+        <button id='zoomOut' type="button" class="btn btn-default" title="Zoom Out"><span class="glyphicon glyphicon-zoom-out"></span></button>
+        <button id='zoomIn' type="button" class="btn btn-default" title="Zoom In"><span class="glyphicon glyphicon-zoom-in"></span></button>
+      </div>
 
       <div id='tools' class="btn-group" style="margin: 5px" role="toolbar">
         <div class="btn-group">
@@ -98,25 +108,22 @@
       </div>
     </div>
 
-      <div id='undoRedo' class="btn-group" style="margin: 5px" role="toolbar">
-        <button id='undo' type="button" class="btn btn-default" title="Undo"><span class="glyphicon glyphicon-chevron-left"></span></button>
-        <button id='redo' type="button" class="btn btn-default" title="Redo"><span class="glyphicon glyphicon-chevron-right"></span></button>
-      </div>
-
-      <div id='zoom' class='btn-group' style="margin: 5px" role="toolbar">
-        <button id='zoomOut' type="button" class="btn btn-default" title="Zoom Out"><span class="glyphicon glyphicon-zoom-out"></span></button>
-        <button id='zoomIn' type="button" class="btn btn-default" title="Zoom In"><span class="glyphicon glyphicon-zoom-in"></span></button>
-      </div>
 
       <div style="margin: 5px">
-        Symmetry:
-        <select id='symmetry'>
-          <option>None</option>
-          <option>Horizontal</option>
-          <option>Vertical</option>
-          <option>4-Way</option>
-          <option>Rotational</option>
-        </select>
+        <div class="form form-horizontal">
+          <div class="form-group">
+            <label for="symmetry" class="col-sm-3 control-label">Symmetry</label>
+            <div class="col-sm-9">
+              <select id='symmetry' class="col-sm-9 form-control">
+                <option>None</option>
+                <option>Horizontal</option>
+                <option>Vertical</option>
+                <option>4-Way</option>
+                <option>Rotational</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
   
       <div style='text-align:center'>
