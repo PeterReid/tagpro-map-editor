@@ -111,7 +111,7 @@
       // bit depth
       IHDRdata += String.fromCharCode(8);
       // color type: 6=truecolor with alpha
-      IHDRdata += String.fromCharCode(6);
+      IHDRdata += String.fromCharCode(3);
       // compression method: 0=deflate, only allowed value
       IHDRdata += String.fromCharCode(0);
       // filtering: 0=adaptive, only allowed value
@@ -121,6 +121,24 @@
 
       return createChunk(13, 'IHDR', IHDRdata);
     },
+    createPLTE = function(palette) {
+      var strsByIndex = [];
+      for (var color in palette) {
+        strsByIndex[palette[color]] = color.substring(0,3);
+      }
+      return createChunk(strsByIndex.length*3, 'PLTE', strsByIndex.join(''));
+    },
+    makePalette = function(rgba) {
+      var colorCount = 0;
+      var palette = {};
+      for (var i=0; i<rgba.length; i+=4) {
+        var color = rgba.substr(i, 4);
+        if (color in palette) continue;
+        palette[color] = colorCount;
+        colorCount++;
+      }
+      return palette;
+    },
 
     png = function (width, height, rgba) {
       var IHDR = createIHDR(width, height),
@@ -129,26 +147,23 @@
         scanline,
         y,
         x,
-        compressedScanlines;
-
+        compressedScanlines,
+        palette = makePalette(rgba),
+        PLTE = createPLTE(palette);
+      
       for (y = 0; y < rgba.length; y += width * 4) {
         scanline = NO_FILTER;
-        if (Array.isArray(rgba)) {
-          for (x = 0; x < width * 4; x++) {
-            scanline += String.fromCharCode(rgba[y + x] & 0xff);
-          }
-        } else {
-          // rgba=string
-          scanline += rgba.substr(y, width * 4);
+        for (x = 0; x < width; x++) {
+          scanline += String.fromCharCode(palette[rgba.substr(y+x*4, 4)]);
         }
         scanlines += scanline;
       }
-
+      
       compressedScanlines = DEFLATE_METHOD + inflateStore(scanlines) + dwordAsString(adler32(scanlines));
 
       IDAT = createChunk(compressedScanlines.length, 'IDAT', compressedScanlines);
 
-      return SIGNATURE + IHDR + IDAT + IEND;
+      return SIGNATURE + IHDR + PLTE + IDAT + IEND;
     };
 
   make_crc_table();
