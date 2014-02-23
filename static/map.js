@@ -232,8 +232,6 @@ $(function() {
 
   // taken from http://members.chello.at/~easyfilter/bresenham.html
   function circleFn (x0, y0, x1, y1, fill) {
-    //return rectFn(x0, y0, x1, y1, fill);
-
     var circleTiles = [];
     var a = Math.abs(x1-x0), b = Math.abs(y1-y0), b1 = b&1; /* values of diameter */
     var dx = 4*(1-a)*b*b, dy = 4*(b1+1)*a*a; /* error increment */
@@ -244,24 +242,30 @@ $(function() {
     y0 += (b+1)/2; y1 = y0-b1;   /* starting pixel */
     a *= 8*a; b1 = 8*b*b;
 
-    function setPixel(x, y) {
-      circleTiles.push({x: Math.floor(x), y: Math.floor(y)});
+    function addToCircleTiles(x, y) {
+      var flooredY = Math.floor(y);
+      circleTiles.push({x: x, y: flooredY});
+      if (fill) {
+        for (var yi = Math.floor(y1); yi < flooredY; yi++) {
+          circleTiles.push({x: x, y: yi});
+        }
+      }
     }
     do {
-      setPixel(x1, y0); /*   I. Quadrant */
-      setPixel(x0, y0); /*  II. Quadrant */
-      setPixel(x0, y1); /* III. Quadrant */
-      setPixel(x1, y1); /*  IV. Quadrant */
+      addToCircleTiles(x1, y0); /*   I. Quadrant */
+      addToCircleTiles(x0, y0); /*  II. Quadrant */
+      addToCircleTiles(x0, y1); /* III. Quadrant */
+      addToCircleTiles(x1, y1); /*  IV. Quadrant */
       e2 = 2*err;
       if (e2 <= dy) { y0++; y1--; err += dy += a; }  /* y step */
       if (e2 >= dx || 2*err > dy) { x0++; x1--; err += dx += b1; } /* x step */
     } while (x0 <= x1);
 
     while (y0-y1 < b) {  /* too early stop of flat ellipses a=1 */
-      setPixel(x0-1, y0); /* -> finish tip of ellipse */
-      setPixel(x1+1, y0++);
-      setPixel(x0-1, y1);
-      setPixel(x1+1, y1--);
+      addToCircleTiles(x0-1, y0); /* -> finish tip of ellipse */
+      addToCircleTiles(x1+1, y0++);
+      addToCircleTiles(x0-1, y1);
+      addToCircleTiles(x1+1, y1--);
     }
     return circleTiles;
   }
