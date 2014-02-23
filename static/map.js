@@ -758,9 +758,11 @@ $(function() {
 
   function clearMap() {
     var emptyTypes = [];
-    for (var x=0;x<20;x++) {
+    var clearX = tiles ? width : 20;
+    var clearY = tiles ? height : 20;
+    for (var x=0;x<clearX;x++) {
       var col = emptyTypes[x] = [];
-      for (var y=0; y<20; y++) {
+      for (var y=0; y<clearY; y++) {
         col.push(floorType)
       }
     }
