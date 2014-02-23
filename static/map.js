@@ -245,7 +245,7 @@ $(function() {
     a *= 8*a; b1 = 8*b*b;
 
     function setPixel(x, y) {
-      circleTiles.push({x: x, y: y});
+      circleTiles.push({x: Math.floor(x), y: Math.floor(y)});
     }
     do {
       setPixel(x1, y0); /*   I. Quadrant */
