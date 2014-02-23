@@ -230,6 +230,86 @@ $(function() {
     }
   })
 
+  // taken from http://members.chello.at/~easyfilter/bresenham.html
+  function circleFn (x0, y0, x1, y1, fill) {
+    var circleTiles = [];
+    var a = Math.abs(x1-x0), b = Math.abs(y1-y0), b1 = b&1; /* values of diameter */
+    var dx = 4*(1-a)*b*b, dy = 4*(b1+1)*a*a; /* error increment */
+    var err = dx+dy+b1*a*a, e2; /* error of 1.step */
+
+    if (x0 > x1) { x0 = x1; x1 += a; } /* if called with swapped points */
+    if (y0 > y1) y0 = y1; /* .. exchange them */
+    y0 += (b+1)/2; y1 = y0-b1;   /* starting pixel */
+    a *= 8*a; b1 = 8*b*b;
+
+    function addToCircleTiles(x, y) {
+      var flooredY = Math.floor(y);
+      circleTiles.push({x: x, y: flooredY});
+      if (fill) {
+        for (var yi = Math.floor(y1); yi < flooredY; yi++) {
+          circleTiles.push({x: x, y: yi});
+        }
+      }
+    }
+    do {
+      addToCircleTiles(x1, y0); /*   I. Quadrant */
+      addToCircleTiles(x0, y0); /*  II. Quadrant */
+      addToCircleTiles(x0, y1); /* III. Quadrant */
+      addToCircleTiles(x1, y1); /*  IV. Quadrant */
+      e2 = 2*err;
+      if (e2 <= dy) { y0++; y1--; err += dy += a; }  /* y step */
+      if (e2 >= dx || 2*err > dy) { x0++; x1--; err += dx += b1; } /* x step */
+    } while (x0 <= x1);
+
+    while (y0-y1 < b) {  /* too early stop of flat ellipses a=1 */
+      addToCircleTiles(x0-1, y0); /* -> finish tip of ellipse */
+      addToCircleTiles(x1+1, y0++);
+      addToCircleTiles(x0-1, y1);
+      addToCircleTiles(x1+1, y1--);
+    }
+    return circleTiles;
+  }
+
+  var circleFill = new Tool({
+    down: function(x,y) {
+      this.downX = x;
+      this.downY = y;
+      console.log('down at ', x,y);
+    },
+    speculateUp: function(x,y) {
+      var coordinates = circleFn(this.downX===undefined?x:this.downX, this.downY===undefined?y:this.downY, x, y, true);
+      var calculatedTiles = [];
+      for (var i = 0; i < coordinates.length; i++) {
+        calculatedTiles.push(new TileState(tiles[coordinates[i].x][coordinates[i].y], {type: brushTileType}));
+      }
+      return new UndoStep(calculatedTiles);
+    },
+    up: function(x,y) {
+      this.downX = undefined;
+      this.downY = undefined;
+    }
+  })
+
+  var circleOutline = new Tool({
+    down: function(x,y) {
+      this.downX = x;
+      this.downY = y;
+      console.log('down at ', x,y);
+    },
+    speculateUp: function(x,y) {
+      var coordinates = circleFn(this.downX===undefined?x:this.downX, this.downY===undefined?y:this.downY, x, y, false);
+      var calculatedTiles = [];
+      for (var i = 0; i < coordinates.length; i++) {
+        calculatedTiles.push(new TileState(tiles[coordinates[i].x][coordinates[i].y], {type: brushTileType}));
+      }
+      return new UndoStep(calculatedTiles);
+    },
+    up: function(x,y) {
+      this.downX = undefined;
+      this.downY = undefined;
+    }
+  })
+
   var fill = new Tool({
     speculateUp: function(x,y) {
       var targetType = tiles[x][y].type;
@@ -258,10 +338,10 @@ $(function() {
         });
         toChange = tempToChange;
       }
-
       return new UndoStep(changed);
     }
   })
+
   var wire = new Tool({
     type: 'special',
     unselect: function() {
@@ -800,7 +880,7 @@ $(function() {
   var controlDown = false;
 
   $(document).keydown(function(e) {
-    if(e.which==17) {
+    if(e.which==17) { // control
       controlDown = true;
     } else if (e.which==90) { //z
       undo();
@@ -808,8 +888,12 @@ $(function() {
       redo();
     }
   }).keyup(function(e) {
-    if (e.which==17) {
+    if (e.which==17) { // control
       controlDown = false;
+    }
+    if (e.which==16) {
+      selectedTool
+
     }
   });
   
@@ -1060,6 +1144,8 @@ $(function() {
   $('#toolLine').data('tool', line);
   $('#toolRectFill').data('tool', rectFill);
   $('#toolRectOutline').data('tool', rectOutline);
+  $('#toolCircleFill').data('tool', circleFill);
+  $('#toolCircleOutline').data('tool', circleOutline);
   $('#toolFill').data('tool', fill);
   $('#toolWire').data('tool', wire);
   $('#tools .btn').click(function() {
