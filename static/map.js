@@ -152,6 +152,27 @@ $(function() {
     return lineTiles;
   }
 
+  function constrainToSquare(x0, y0, x1, y1) {
+
+    var xPrime, yPrime;
+    var xOffset = Math.abs(x1-x0), yOffset = Math.abs(y1-y0);
+    var offsetMin = Math.min(xOffset, yOffset);
+    if (x1 >= x0 && y1 >= y0) {         // Quadrant I
+      xPrime = x0 + offsetMin;
+      yPrime = y0 + offsetMin;
+    } else if (x1 <= x0 && y1 >= y0) {  // Quadrant II
+      xPrime = x0 - offsetMin;
+      yPrime = y0 + offsetMin;
+    } else if (x1 <= x0 && y1 <= y0) {  // Quadrant III
+      xPrime = x0 - offsetMin;
+      yPrime = y0 - offsetMin;
+    } else  {                           // Quadrant IV
+      xPrime = x0 + offsetMin;
+      yPrime = y0 - offsetMin;
+    }
+    return {x: xPrime, y: yPrime};
+  }
+
   var line = new Tool({
     down: function(x,y) {
       this.downX = x;
@@ -174,6 +195,11 @@ $(function() {
 
 
   function rectFn (x0, y0, x1, y1, fill) {
+    if (shiftDown) { // constrain to diagonal
+      var adjustedPoint1 = constrainToSquare(x0,y0,x1,y1);
+      x1 = adjustedPoint1.x;
+      y1 = adjustedPoint1.y
+    }
     var rectTiles = [];
     var left = Math.min(x0, x1);
     var right = Math.max(x0, x1);
@@ -232,6 +258,12 @@ $(function() {
 
   // taken from http://members.chello.at/~easyfilter/bresenham.html
   function circleFn (x0, y0, x1, y1, fill) {
+    if (shiftDown) { // constrain to diagonal
+      var adjustedPoint1 = constrainToSquare(x0,y0,x1,y1);
+      x1 = adjustedPoint1.x;
+      y1 = adjustedPoint1.y
+    }
+
     var circleTiles = [];
     var a = Math.abs(x1-x0), b = Math.abs(y1-y0), b1 = b&1; /* values of diameter */
     var dx = 4*(1-a)*b*b, dy = 4*(b1+1)*a*a; /* error increment */
@@ -880,10 +912,13 @@ $(function() {
   });
 
   var controlDown = false;
+  var shiftDown = false;
 
   $(document).keydown(function(e) {
     if(e.which==17) { // control
       controlDown = true;
+    } else if (e.which==16) {
+      shiftDown = true;
     } else if (e.which==90) { //z
       undo();
     } else if (e.which==89) { //y
@@ -894,8 +929,7 @@ $(function() {
       controlDown = false;
     }
     if (e.which==16) {
-      selectedTool
-
+      shiftDown = false;
     }
   });
   
