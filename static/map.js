@@ -648,7 +648,8 @@ $(function() {
 
   var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType,
     redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType,
-    spikeType, powerupType, speedpadType;
+    spikeType, powerupType, speedpadType,
+    yellowFlagType, redEndzoneType, blueEndzoneType;
   var tileTypes = [
     emptyType = new TileType('empty', 0,1, 0,0,0, "Background"),
     floorType = new TileType('floor', 2,2, 212,212,212, "Tile"),
@@ -670,7 +671,10 @@ $(function() {
     redFlagType = new TileType('redFlag', 8,0, 255,0,0, "Red Flag"),
     blueFlagType = new TileType('blueFlag', 9,0, 0,0,255, "Blue Flag"),
     redSpawnType = new TileType('redSpawn', 6,2, 155,0,0, "Red Spawn Tile - Red balls will spawn within a certain radius of this tile."),
-    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain radius of this tile.")
+    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain radius of this tile."),
+    yellowFlagType = new TileType('yellowFlag', 7,0, 128,128,0, "Yellow Flag - Bring this neutral flag to your zone to score."),
+    redEndzoneType = new TileType('redEndzone', 5,1, 185,0,0, "Red Endzone - Bring a neutral (yellow) flag to this zone to score."),
+    blueEndzoneType = new TileType('blueEndzone', 5,2, 25,0,148, "Blue Endzone - Bring a neutral (yellow) flag to this zone to score.")
   ]
   function areOpposites(t1, t2) {
     t1.opposite = t2;
@@ -681,6 +685,7 @@ $(function() {
   areOpposites(redFieldType, blueFieldType);
   areOpposites(redFlagType, blueFlagType);
   areOpposites(redSpawnType, blueSpawnType);
+  areOpposites(redEndzoneType, blueEndzoneType);
   
 
   function Tile(options, elem) {
@@ -1107,22 +1112,30 @@ $(function() {
     localStorage.setItem('json', JSON.stringify(makeLogic()));
   });
 
-  function isValidMap() {
+  function isValidMapStr() {
     var hasRedFlag = false;
     var hasBlueFlag = false;
+    var hasRedEndzone = false;
+    var hasBlueEndzone = false;
     $.each(tiles, function(rowIdx, row) {
       $.each(row, function(tileIdx, tile) {
         if (tile.type.name == "redFlag") hasRedFlag = true;
         if (tile.type.name == "blueFlag") hasBlueFlag = true;
+        if (tile.type.name == "redEndzone") hasRedEndzone = true;
+        if (tile.type.name == "blueEndzone") hasBlueEndzone = true;
       });
     });
-    return (hasRedFlag && hasBlueFlag);
+    if (!(hasRedEndzone || hasRedFlag))
+      return "A map requires a red flag or a red endzone to test.";
+    if (!(hasBlueEndzone || hasBlueFlag))
+      return "A map requires a blue flag or a blue endzone to test.";
+    return "Valid";
   }
 
   $('#test').click(function() {
-    var valid = isValidMap();
-    if (!valid) {
-      alert("A map requires at least one red flag and one blue flag to test.");
+    var validStr = isValidMapStr();
+    if (validStr != "Valid") {
+      alert(validStr);
       return;
     }
     $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64()}, function(data) {
@@ -1146,8 +1159,8 @@ $(function() {
   }
 
   var paletteRows = [
-    [wallType, floorType, emptyType],
-    [redFlagType, blueFlagType, redSpawnType, blueSpawnType],
+    [wallType, floorType, emptyType, redEndzoneType, blueEndzoneType],
+    [redFlagType, blueFlagType, yellowFlagType, redSpawnType, blueSpawnType],
     [speedpadType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType],
     [switchType, offFieldType, onFieldType, redFieldType, blueFieldType],
     [bombType, spikeType, powerupType, portalType]
