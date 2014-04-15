@@ -1159,11 +1159,10 @@ $(function() {
   }
 
   var paletteRows = [
-    [wallType, floorType, emptyType, redEndzoneType, blueEndzoneType],
-    [redFlagType, blueFlagType, yellowFlagType, redSpawnType, blueSpawnType],
-    [speedpadType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType],
-    [switchType, offFieldType, onFieldType, redFieldType, blueFieldType],
-    [bombType, spikeType, powerupType, portalType]
+    [wallType, floorType, emptyType, '', spikeType, powerupType, portalType],
+    [redFlagType, blueFlagType, redSpawnType, blueSpawnType, redEndzoneType, blueEndzoneType, yellowFlagType, ],
+    [speedpadType, redSpeedPadType, blueSpeedpadType, '', '', redFloorType, blueFloorType],
+    [switchType, offFieldType, onFieldType, redFieldType, blueFieldType, '', bombType]
   ]
 
   var brushTileType = paletteRows[0][0];
@@ -1172,6 +1171,10 @@ $(function() {
   $.each(paletteRows, function(rowIdx, row) {
     var $rowDiv = $("<div></div>");
     $.each(row, function(cellIdx, type) {
+      if (!type) {
+        $rowDiv.append($("<div style='width:40px;display:inline-block;'></div>"));
+        return;
+      }
       var $button = $("<div class='tileBackground tilePaletteOption' title = '" + type.toolTipText + "'><div class='tile'><div class='tileTypeSelectionIndicator'></div></div></div>");
       $button.data('tileType', type);
       type.drawOn($button.find('.tile'));
