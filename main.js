@@ -35,6 +35,10 @@ app.post('/test', function(req, res) {
     var logic = JSON.parse(req.body.logic);
     var layout = new Buffer(req.body.layout, 'base64');
     
+    if (req.body.eu == 'true')
+      var url =  Math.random() < 0.5 ? 'http://maptest.newcompte.fr/testmap' : 'http://justletme.be:8080/testmap';
+    else
+      var url = 'http://tagpro-maptest.koalabeast.com/testmap';
     /*var form = new FormData();
     var request = http.request({
       method: 'post',
@@ -68,7 +72,7 @@ app.post('/test', function(req, res) {
     form.append('logic', fs.createReadStream('temp.json'));
     form.append('layout', fs.createReadStream('temp.png'));
     
-    form.submit('http://tagpro-maptest.koalabeast.com/testmap', function(err, testRes) {
+    form.submit(url, function(err, testRes) {
       if (err) {
         res.send('Sorry, we could not start up a test map. ' + err.toString());
       } else {

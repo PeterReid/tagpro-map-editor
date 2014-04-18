@@ -1132,13 +1132,14 @@ $(function() {
     return "Valid";
   }
 
-  $('#test').click(function() {
+  $('#test, #testeu').click(function(e) {
     var validStr = isValidMapStr();
     if (validStr != "Valid") {
       alert(validStr);
-      return;
+      return false;
     }
-    $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64()}, function(data) {
+    var eu = e.target.id == 'testeu' ? true : false;
+    $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64(), eu: eu}, function(data) {
       if (data && data.location) {
         window.open(data.location);
       } else {
@@ -1146,6 +1147,7 @@ $(function() {
       }
       //console.log('back from test', data)
     });
+    return false;
   });
   
   function setBrushTileType(type) {
