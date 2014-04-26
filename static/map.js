@@ -1433,6 +1433,35 @@ $(function() {
   });
   enableZoomButtons();
   
+  var fullscreen = document.body.requestFullScreen || document.body.webkitRequestFullScreen || document.body.mozRequestFullScreen || document.body.msRequestFullScreen;
+  if (!fullscreen) {
+    enable($('#toggleFullscreen'), false);
+  } else {
+    if (document.isFullScreen || document.webkitIsFullScreen || document.mozFullScreen) {
+      $('#toggleFullscreen').addClass('active');
+    }
+    $('#toggleFullscreen').click(function() {
+      if (document.isFullScreen || document.webkitIsFullScreen || document.mozFullScreen) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if(document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if(document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        }
+      } else {
+        fullscreen.apply(document.body);
+      }
+    });
+    $(document).on('fullscreenchange webkitfullscreenchange mozfullscreenchange', function(e) {
+      if (document.isFullScreen || document.webkitIsFullScreen || document.mozFullScreen) {
+        $('#toggleFullscreen').addClass('active');
+      } else {
+        $('#toggleFullscreen').removeClass('active');
+      }
+    });
+  }
+  
   $('#dropHelp').click(function() {
     alert("Importing Map:\n" +
       "Drag a .png file and a .json file from your file manager onto their respective squares. When both are added, hit Import to apply them to the current map.\n\n" +
