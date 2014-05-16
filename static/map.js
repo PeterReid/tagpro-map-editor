@@ -26,8 +26,8 @@ $(function() {
   }
   TileType.prototype.drawOn = function($elem, tile) {
     var styleBgColor = '';
-    var styleUrl = 'url("' + (this.image || 'default-skin') + '.png")';
-    var styleBackgroundSize = this.image ? (5*tileSize+'px ' + tileSize + 'px') : (13*tileSize + 'px ' + 9*tileSize + 'px');
+    var styleUrl = 'url("' + (this.image || 'default-skin-v2') + '.png")';
+    var styleBackgroundSize = this.image ? (5*tileSize+'px ' + tileSize + 'px') : (16*tileSize + 'px ' + 11*tileSize + 'px');
     if (this.name == 'empty') {
       styleBgColor = 'black';
       styleUrl = '';
@@ -47,7 +47,7 @@ $(function() {
     if (this == wallType && tile) {
       var x = tile.x, y = tile.y;
       var idx = (isWall(x-1,y)?1:0) | (isWall(x+1,y)?2:0) | (isWall(x,y-1)?4:0) | (isWall(x,y+1)?8:0);
-      var coords = [
+      var coords = [5.5,5.5]/*[
         [0,0], //
         [9,6], // L
         [8,6], // R
@@ -64,7 +64,7 @@ $(function() {
         [7,4], // LUD
         [0,4], // RUD
         [4,4]  // LRUD
-      ][idx];
+      ][idx];*/
       $elem.css('background-position', positionCss(coords[0], coords[1]))
     } else {
       $elem.css('background-position', this.positionCss())
@@ -651,30 +651,30 @@ $(function() {
     spikeType, powerupType, speedpadType,
     yellowFlagType, redEndzoneType, blueEndzoneType;
   var tileTypes = [
-    emptyType = new TileType('empty', 0,1, 0,0,0, "Background"),
-    floorType = new TileType('floor', 2,2, 212,212,212, "Tile"),
+    emptyType = new TileType('empty', 13,5, 0,0,0, "Background"),
+    floorType = new TileType('floor',13,4, 212,212,212, "Tile"),
     wallType = new TileType('wall', 0,0, 120,120,120, "Wall"),
-    switchType = new TileType('switch', 2,5, 185,122,87, "Button - Emits signals to gates and bombs.", {logicFn: exportSwitch}),
-    spikeType = new TileType('spike', 2,3, 55,55,55, "Spike"),
-    bombType = new TileType('bomb', 6,5, 255,128,0, "Bomb - Receives signals from switches."),
-    powerupType = new TileType('powerup', 7,8, 0,255,0, "Powerup"),
+    switchType = new TileType('switch', 13,6, 185,122,87, "Button - Emits signals to gates and bombs.", {logicFn: exportSwitch}),
+    spikeType = new TileType('spike', 12,0, 55,55,55, "Spike"),
+    bombType = new TileType('bomb', 12,1, 255,128,0, "Bomb - Receives signals from switches."),
+    powerupType = new TileType('powerup', 12,7, 0,255,0, "Powerup"),
     speedpadType = new TileType('speedpad', 0,0, 255,255,0, "Boost", {image: 'speedpad'}),
     blueSpeedpadType = new TileType('blueSpeedpad', 0,0, 115,115,255, "Blue Team Boost", {image: 'speedpadblue'}),
     redSpeedPadType = new TileType('redSpeedpad', 0,0, 255,115,115, "Red Team Boost", {image: 'speedpadred'}),
-    redFloorType = new TileType('redFloor', 3,1, 220,186,186, "Red Speed Tile - Increases speed for non-flag-carriers."),
-    blueFloorType = new TileType('blueFloor', 3,2, 187,184,221, "Blue Speed Tile - Increases speed for non-flag-carriers."),
-    offFieldType = new TileType('offField', 10,1, 0,117,0, "Gate - Default Off", {logicFn: setFieldFn('off')}),
-    onFieldType = new TileType('onField', 10,2, 0,117,0, "Gate - Default On", {logicFn: setFieldFn('on')}),
-    redFieldType = new TileType('redField', 10,3, 0,117,0, "Gate - Default Red", {logicFn: setFieldFn('red')}),
-    blueFieldType = new TileType('blueField', 10,4, 0,117,0, "Gate - Default Blue", {logicFn: setFieldFn('blue')}),
+    redFloorType = new TileType('redFloor', 14,4, 220,186,186, "Red Speed Tile - Increases speed for non-flag-carriers."),
+    blueFloorType = new TileType('blueFloor', 15,4, 187,184,221, "Blue Speed Tile - Increases speed for non-flag-carriers."),
+    offFieldType = new TileType('offField', 12,3, 0,117,0, "Gate - Default Off", {logicFn: setFieldFn('off')}),
+    onFieldType = new TileType('onField', 13,3, 0,117,0, "Gate - Default On", {logicFn: setFieldFn('on')}),
+    redFieldType = new TileType('redField', 14,3, 0,117,0, "Gate - Default Red", {logicFn: setFieldFn('red')}),
+    blueFieldType = new TileType('blueField', 15,3, 0,117,0, "Gate - Default Blue", {logicFn: setFieldFn('blue')}),
     portalType = new TileType('portal', 0,0, 202, 192,0, "Portal - Link two portals using the wire tool.", {image: 'portal', logicFn: exportPortal}),
-    redFlagType = new TileType('redFlag', 8,0, 255,0,0, "Red Flag"),
-    blueFlagType = new TileType('blueFlag', 9,0, 0,0,255, "Blue Flag"),
-    redSpawnType = new TileType('redSpawn', 6,2, 155,0,0, "Red Spawn Tile - Red balls will spawn within a certain radius of this tile."),
-    blueSpawnType = new TileType('blueSpawn', 6,3, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain radius of this tile."),
-    yellowFlagType = new TileType('yellowFlag', 7,0, 128,128,0, "Yellow Flag - Bring this neutral flag to your zone to score."),
-    redEndzoneType = new TileType('redEndzone', 5,1, 185,0,0, "Red Endzone - Bring a neutral (yellow) flag to this zone to score."),
-    blueEndzoneType = new TileType('blueEndzone', 5,2, 25,0,148, "Blue Endzone - Bring a neutral (yellow) flag to this zone to score.")
+    redFlagType = new TileType('redFlag', 14,1, 255,0,0, "Red Flag"),
+    blueFlagType = new TileType('blueFlag', 15,1, 0,0,255, "Blue Flag"),
+    redSpawnType = new TileType('redSpawn', 14,0, 155,0,0, "Red Spawn Tile - Red balls will spawn within a certain radius of this tile."),
+    blueSpawnType = new TileType('blueSpawn', 15,0, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain radius of this tile."),
+    yellowFlagType = new TileType('yellowFlag', 13,1, 128,128,0, "Yellow Flag - Bring this neutral flag to your zone to score."),
+    redEndzoneType = new TileType('redEndzone', 14,5, 185,0,0, "Red Endzone - Bring a neutral (yellow) flag to this zone to score."),
+    blueEndzoneType = new TileType('blueEndzone', 15,5, 25,0,148, "Blue Endzone - Bring a neutral (yellow) flag to this zone to score.")
   ]
   function areOpposites(t1, t2) {
     t1.opposite = t2;
