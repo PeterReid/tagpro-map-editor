@@ -646,7 +646,9 @@ $(function() {
     logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
   }
 
-  var floorType, emptyType, wallType, blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType,
+  var floorType, emptyType, 
+    wallType, wallTopLeftType, wallTopRightType, wallBottomLeftType, wallBottomRightType,
+    blueFlagType, redFlagType, switchType, bombType, onFieldType, offFieldType,
     redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType,
     spikeType, powerupType, speedpadType,
     yellowFlagType, redEndzoneType, blueEndzoneType;
@@ -654,6 +656,10 @@ $(function() {
     emptyType = new TileType('empty', 13,5, 0,0,0, "Background"),
     floorType = new TileType('floor',13,4, 212,212,212, "Tile"),
     wallType = new TileType('wall', 0,0, 120,120,120, "Wall"),
+    wallBottomLeftType = new TileType('wallBottomLeft', 2,0, 128,112,64, "Wall BL"),
+    wallTopLeftType = new TileType('wallTopLeft', 7,5, 64,128,80, "Wall TL"),
+    wallTopRightType = new TileType('wallTopRight', 11,6, 64,80,128, "Wall TR"),
+    wallBottomRightType = new TileType('wallBottomRight', 5,8, 128,64,112, "Wall BR"),
     switchType = new TileType('switch', 13,6, 185,122,87, "Button - Emits signals to gates and bombs.", {logicFn: exportSwitch}),
     spikeType = new TileType('spike', 12,0, 55,55,55, "Spike"),
     bombType = new TileType('bomb', 12,1, 255,128,0, "Bomb - Receives signals from switches."),
@@ -1161,7 +1167,8 @@ $(function() {
   }
 
   var paletteRows = [
-    [wallType, floorType, emptyType, '', spikeType, powerupType, portalType],
+    [wallType, wallTopLeftType, wallTopRightType, wallBottomLeftType, wallBottomRightType, floorType, emptyType], 
+    [spikeType, powerupType, portalType],
     [redFlagType, blueFlagType, redSpawnType, blueSpawnType, redEndzoneType, blueEndzoneType, yellowFlagType, ],
     [speedpadType, redSpeedPadType, blueSpeedpadType, '', '', redFloorType, blueFloorType],
     [switchType, offFieldType, onFieldType, redFieldType, blueFieldType, '', bombType]
