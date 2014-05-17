@@ -95,10 +95,13 @@ $(function() {
             } else {
               // The +4 is because of the mirroredness of looking in the corner instead of around this tile's center
               solidEnd = (startDirection + cwSteps + 4) % 8;
-              solidStart = (startDirection - ccwSteps + 4) % 8;
+              solidStart = (startDirection - ccwSteps + 12) % 8;
             }
             
             var coords = quadrantCoords[q+''+solidStart+''+solidEnd + (hasChip?'d':'')];
+            if (!coords) {
+              coords = [5.5,5.5];
+            }
             tile.quadrantElems[q].style.display='inline-block';
             tile.quadrantElems[q].style.backgroundPosition = positionCss(coords[0], coords[1]);
           }
