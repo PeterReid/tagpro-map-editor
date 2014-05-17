@@ -22,6 +22,8 @@ $(function() {
     this.wallSolids = (extra&&extra.wallSolids)|0;
     this.rgb = r | (g<<8) | (b<<16);
     this.opposite = this; // What it switches to when mirrored
+    this.verticalMirror = this;
+    this.horizontalMirror = this;
     this.toolTipText = toolTipText;
   }
   TileType.prototype.isWall = function() {
@@ -751,12 +753,24 @@ $(function() {
     t1.opposite = t2;
     t2.opposite = t1; 
   }
+  function areVerticalMirrors(t1, t2) {
+    t1.verticalMirror = t2;
+    t2.verticalMirror = t1;
+  }
+  function areHorizontalMirrors(t1, t2) {
+    t1.horizontalMirror = t2;
+    t2.horizontalMirror = t1;
+  }
   areOpposites(redSpeedPadType, blueSpeedpadType);
   areOpposites(redFloorType, blueFloorType);
   areOpposites(redFieldType, blueFieldType);
   areOpposites(redFlagType, blueFlagType);
   areOpposites(redSpawnType, blueSpawnType);
   areOpposites(redEndzoneType, blueEndzoneType);
+  areHorizontalMirrors(wallBottomLeftType, wallBottomRightType);
+  areHorizontalMirrors(wallTopLeftType, wallTopRightType);
+  areVerticalMirrors(wallBottomLeftType, wallTopLeftType);
+  areVerticalMirrors(wallBottomRightType, wallTopRightType);
   
 
   function Tile(options, elem) {
@@ -907,36 +921,12 @@ $(function() {
     console.log('Symmetry is ', symmetry);
   });
 
-  var potentialTiles = [];
-  var potentialSymmetryTiles = []; // these are tiles that will oppositely colored
-
-
-  function applyPotentials() {
-    $.each(potentialSymmetryTiles, function(key, tile) {
-      tile.setType(brushTileType.opposite);
-    });
-    $.each(potentialTiles, function(key, tile) {
-      tile.setType(brushTileType);
-    });
-    cleanDirtyWalls();
-  }
-
-  function setPotentials(tiles, symmetryTiles) {
-    //console.log('Setting potentials', tiles);
-    potentialTiles = tiles;
-    potentialSymmetryTiles = symmetryTiles;
-    $.each(potentialTiles, function(key, tile) {
-      tile.highlightWithPotential(true);
-    });
-    $.each(potentialSymmetryTiles, function(key, tile) {
-      tile.highlightWithPotential(true);
-    } )
-  }
-  
   function transformPoint(pt, how) {
     pt.x = pt.x*how[0] + (tiles.length-1)*how[1];
     pt.y = pt.y*how[2] + (tiles[0].length-1)*how[3];
     if (pt.type && how[4]) pt.type = pt.type.opposite;
+    if (pt.type && how[0]==-1) pt.type = pt.type.horizontalMirror;
+    if (pt.type && how[2]==-1) pt.type = pt.type.verticalMirror;
   }
   
   var symmetryFns = {
@@ -1052,8 +1042,6 @@ $(function() {
     }
     })
     .on('mouseleave', '.tile', function(e) {
-      potentialTiles = [];
-      potentialSymmetryTiles = [];
       clearPotentialHighlights();
 //      console.log('mouse left ', $(this).data('x'), $(this).data('y'));
     })
@@ -1297,7 +1285,6 @@ $(function() {
     $(this).toggleClass('active');
     selectedTool = $(this).data('tool');
     selectedTool.select.call(selectedTool);
-    potentialTiles = [];
   })
 
   var selectedTool = pencil;
