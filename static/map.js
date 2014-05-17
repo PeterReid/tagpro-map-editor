@@ -5,6 +5,8 @@ $(function() {
   var maxZoom = 3;
   var zoom = maxZoom;
   var tileSize = 40;
+  var tileSheetWidth = 16;
+  var tileSheetHeight = 11;
   
   function positionCss(x, y) {
     return -x*tileSize + 'px ' + -y*tileSize + 'px';
@@ -31,7 +33,7 @@ $(function() {
   TileType.prototype.drawOn = function($elem, tile) {
     var styleBgColor = '';
     var styleUrl = 'url("' + (this.image || 'default-skin-v2') + '.png")';
-    var styleBackgroundSize = this.image ? (5*tileSize+'px ' + tileSize + 'px') : (16*tileSize + 'px ' + 11*tileSize + 'px');
+    var styleBackgroundSize = this.image ? (5*tileSize+'px ' + tileSize + 'px') : (tileSheetWidth*tileSize + 'px ' + tileSheetHeight*tileSize + 'px');
     if (this.name == 'empty') {
       styleBgColor = 'black';
       styleUrl = '';
@@ -1471,10 +1473,18 @@ $(function() {
   function showZoom() {
     tileSize = [10,20,30,40][zoom];
     var sizeCss = tileSize + 'px';
+    var quadrantSizeCss = tileSize/2 + 'px';
     var singleTileBackgroundSize = sizeCss + ' ' + sizeCss;
+    var tileSheetBackgroundSize = (tileSize*tileSheetWidth) + 'px ' + (tileSize*tileSheetHeight) + 'px';
     
     function applySize(e) {
       e.style.width = e.style.height = sizeCss;
+    }
+    function applyQuadrantSize(e, isLeft, isBottom) {
+      e.style.width = e.style.height = quadrantSizeCss;
+      e.style.left = isLeft ? '0' : quadrantSizeCss;
+      e.style.top = isBottom ? quadrantSizeCss : '0';
+      e.style.backgroundSize = tileSheetBackgroundSize;
     }
     
     for (var x=0; x<tiles.length; x++) {
@@ -1491,6 +1501,9 @@ $(function() {
         tile.selectionIndicator.style.backgroundSize = singleTileBackgroundSize;
         applySize(tile.elem[0]);
         applySize(tile.background[0]);
+        for (var q=0;q<4; q++) {
+          applyQuadrantSize(tile.quadrantElems[q], q&2, (q+1)&2)
+        }
         
         tile.type.drawOn(tile.elem, tile);
         floorType.drawOn(tile.background, null);
