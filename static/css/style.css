@@ -12,10 +12,32 @@ div.tile {
     height:40px;
     display:inline-block;
 }
+div.tileQuadrant {
+  width:20px;
+  height:20px;
+  position:absolute;
+  background-image: url("../default-skin-v2.png");
+}
 div.nestedSquare {
   position:absolute;
   left:0;
   top:0;
+}
+div.nestedSquareTL {
+  left:0;
+  top:0;
+}
+div.nestedSquareTR {
+  left:20px;
+  top:0;
+}
+div.nestedSquareBL {
+  left:0;
+  top:20px;
+}
+div.nestedSquareBR {
+  left:20px;
+  top:20px;
 }
 div.tileBackground {
     width:40px;
