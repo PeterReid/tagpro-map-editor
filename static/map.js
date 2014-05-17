@@ -1194,20 +1194,20 @@ $(function() {
   function isValidMapStr() {
     var hasRedFlag = false;
     var hasBlueFlag = false;
-    var hasRedEndzone = false;
-    var hasBlueEndzone = false;
+    var hasRedSpawn = false;
+    var hasBlueSpawn = false;
     $.each(tiles, function(rowIdx, row) {
       $.each(row, function(tileIdx, tile) {
         if (tile.type.name == "redFlag") hasRedFlag = true;
         if (tile.type.name == "blueFlag") hasBlueFlag = true;
-        if (tile.type.name == "redEndzone") hasRedEndzone = true;
-        if (tile.type.name == "blueEndzone") hasBlueEndzone = true;
+        if (tile.type.name == "redSpawn") hasRedSpawn = true;
+        if (tile.type.name == "blueSpawn") hasBlueSpawn = true;
       });
     });
-    if (!(hasRedEndzone || hasRedFlag))
-      return "A map requires a red flag or a red endzone to test.";
-    if (!(hasBlueEndzone || hasBlueFlag))
-      return "A map requires a blue flag or a blue endzone to test.";
+    if (!(hasRedSpawn || hasRedFlag))
+      return "A map requires a red flag or a red spawn tile to test.";
+    if (!(hasBlueSpawn || hasBlueFlag))
+      return "A map requires a blue flag or a blue spawn tile to test.";
     return "Valid";
   }
 
