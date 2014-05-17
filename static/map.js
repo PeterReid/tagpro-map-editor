@@ -17,7 +17,7 @@ $(function() {
     this.postPlaceFn = extra&&extra.postPlaceFn;
     this.logicFn = extra&&extra.logicFn;
     this.image = extra&&extra.image;
-    this.wallSolids = extra&&extra.wallSolids;
+    this.wallSolids = (extra&&extra.wallSolids)|0;
     this.rgb = r | (g<<8) | (b<<16);
     this.opposite = this; // What it switches to when mirrored
     this.toolTipText = toolTipText;
@@ -50,39 +50,55 @@ $(function() {
     }
     if (tile && tile.quadrantElems) {
       if (this.isWall()) {
-        for (var q=0; q<4; q++) {
-          var mask = (this.wallSolids >> (q<<1)) & 3;
+        var x = tile.x, y = tile.y;
+        // Beware: dragons
+        for (var q=0; q<4; q++) { // loop through this tile's four quadrants like a clock: TR, BR, BL, TL
+          var mask = (this.wallSolids >> (q<<1)) & 3; // See what is filled in in this quadrant
           
           if (mask==0) {
             tile.quadrantElems[q].style.display='none';
           } else {
-            var cx=0, cy=0;
-            //var startLookingForOpeningClockwiseFrom = (q<<1) + (mask & 2;
-            // There is a chip out of this quadrant's corner if it is solid and across from us, on the
-            // same tile, is empty.
-            var hasChip = mask==3 && (((this.wallSolids|(this.wallSolids<<8)) >> ((q+2)<<1))&3)==0;
-            var first = [2,3,4,1][q]
-            var solidStart = 2;
-            var solidEnd = 2;
-            if (mask==3) {
-              solidStart = ((q+2)*2) % 8;
-              solidEnd = ((q+3)*2) % 8;
-            } else if (mask==1) {
-              solidStart = ((q+2)*2+1) % 8;
-              solidEnd = ((q+2)*2+2) % 8;
-            } else if (mask==2) {
-              solidStart = ((q+2)*2) % 8;
-              solidEnd = ((q+2)*2+1) % 8;
+            // This quadrant is next to some grid corner. We use some bit patterns to tell which.
+            var cornerX = x + ((q&2)==0 ? 1 : 0); 
+            var cornerY = y + ((((q+1)&2)==0) ? 0 : 1);
+            // Figure out the filled/unfilledness of the 8 spots around this corner
+            var aroundCorner = 
+               (wallSolidsAt(cornerX,cornerY)&0xc0)|
+               (wallSolidsAt(cornerX-1, cornerY)&0x03)| 
+               (wallSolidsAt(cornerX-1, cornerY-1)&0x0c)| 
+               (wallSolidsAt(cornerX, cornerY-1)&0x30);
+            aroundCorner = aroundCorner|(aroundCorner<<8);
+            var startDirection = q*2 + 1; // start pointing through the middle of our own quadrant
+            // See how far we can rotate clockwise without falling off the wall
+            var cwSteps = 0; 
+            while (cwSteps<8 && (aroundCorner & (1<<(startDirection+cwSteps)))) {
+              cwSteps++;
+            }
+            // See how far we can rotate counterclockwise without falling off the wall
+            var ccwSteps = 0;
+            while (ccwSteps<8 && (aroundCorner & (1<<(startDirection+7-ccwSteps)))) {
+              ccwSteps++;
             }
             
-            solidStart = (solidStart+6)%8;
-            solidEnd = (solidEnd+6)%8;
-            var coords = quadrantCoords['1.'+first+''+solidStart+''+solidEnd + (hasChip?'d':'')];
+            // There is a chip out of this quadrant's corner if it is solid and across from us, on the
+            // same tile, is empty. (This is the corner by the center of the tile.)
+            var hasChip = mask==3 && (((this.wallSolids|(this.wallSolids<<8)) >> ((q+2)<<1))&3)==0;
+            
+            var solidStart,solidEnd;
+            if (cwSteps==8) {
+              // We're surrounded!
+              solidStart=solidEnd=0;
+            } else {
+              // The +4 is because of the mirroredness of looking in the corner instead of around this tile's center
+              solidEnd = (startDirection + cwSteps + 4) % 8;
+              solidStart = (startDirection - ccwSteps + 4) % 8;
+            }
+            
+            var coords = quadrantCoords[q+''+solidStart+''+solidEnd + (hasChip?'d':'')];
             tile.quadrantElems[q].style.display='inline-block';
             tile.quadrantElems[q].style.backgroundPosition = positionCss(coords[0], coords[1]);
           }
         }
-        var x = tile.x, y = tile.y;
         var idx = (isWall(x-1,y)?1:0) | (isWall(x+1,y)?2:0) | (isWall(x,y-1)?4:0) | (isWall(x,y+1)?8:0);
         var coords = [5.5,5.5]/*[
           [0,0], //
@@ -698,14 +714,15 @@ $(function() {
     redFieldType, blueFieldType, portalType, redSpawnType, blueSpawnType, redSpeedPadType, blueSpeedpadType, redFloorType, blueFloorType,
     spikeType, powerupType, speedpadType,
     yellowFlagType, redEndzoneType, blueEndzoneType;
+  
   var tileTypes = [
     emptyType = new TileType('empty', 13,5, 0,0,0, "Background"),
     floorType = new TileType('floor',13,4, 212,212,212, "Tile"),
-    wallType = new TileType('wall', 0,0, 120,120,120, "Wall", {wallSolids: 0xff}), // encoding: bit 0 is noon, goes clockwise
-    wallBottomLeftType = new TileType('wallBottomLeft', 2,0, 128,112,64, "Wall BL", {wallSolids: 0x78}),
-    wallTopLeftType = new TileType('wallTopLeft', 7,5, 64,128,80, "Wall TL", {wallSolids: 0xe1}),
-    wallTopRightType = new TileType('wallTopRight', 11,6, 64,80,128, "Wall TR", {wallSolids: 0x87}),
-    wallBottomRightType = new TileType('wallBottomRight', 5,8, 128,64,112, "Wall BR", {wallSolids: 0x1e}),
+    wallType = new TileType('wall', 15,6, 120,120,120, "Wall", {wallSolids: 0xff}), // encoding: bit 0 is noon, goes clockwise
+    wallBottomLeftType = new TileType('wallBottomLeft', 15,7, 128,112,64, "Wall BL", {wallSolids: 0xb4}),
+    wallTopLeftType = new TileType('wallTopLeft', 15,9, 64,128,80, "Wall TL", {wallSolids: 0xd2}),
+    wallTopRightType = new TileType('wallTopRight', 15,10, 64,80,128, "Wall TR", {wallSolids: 0x4b}),
+    wallBottomRightType = new TileType('wallBottomRight', 15,8, 128,64,112, "Wall BR", {wallSolids: 0x2d}),
     switchType = new TileType('switch', 13,6, 185,122,87, "Button - Emits signals to gates and bombs.", {logicFn: exportSwitch}),
     spikeType = new TileType('spike', 12,0, 55,55,55, "Spike"),
     bombType = new TileType('bomb', 12,1, 255,128,0, "Bomb - Receives signals from switches."),
@@ -773,10 +790,11 @@ $(function() {
       type.postPlaceFn.call(type, this.x, this.y);
     }
 
-    maybeIsDirtyWall(this.x-1, this.y);
-    maybeIsDirtyWall(this.x+1, this.y);
-    maybeIsDirtyWall(this.x, this.y-1);
-    maybeIsDirtyWall(this.x, this.y+1);
+    for (var dx=-1; dx<=1; dx++) {
+      for (var dy=-1; dy<=1; dy++) {
+        maybeIsDirtyWall(this.x+dx, this.y+dy);
+      }
+    }
     mayHaveChanged(this);
   }
   Tile.prototype.highlight = function(highlighted) {
@@ -794,13 +812,19 @@ $(function() {
   function isWall(x, y) {
     return tiles[x] && tiles[x][y] && tiles[x][y].type.isWall();
   }
+  function wallSolidsAt(x,y) {
+    var t = (tiles[x] && tiles[x][y] && tiles[x][y].type.wallSolids|0);
+    return t|(t<<8);
+  }
   function maybeIsDirtyWall(x, y) {
-    if (isWall(x,y)) dirtyWalls[x + ',' + y] = tiles[x][y];
+    if (isWall(x,y)) {
+      dirtyWalls[x + ',' + y] = tiles[x][y];
+    }
   }
   function cleanDirtyWalls() {
     for (var key in dirtyWalls) {
       var wall = dirtyWalls[key];
-      if (wall.type.isWall()) continue;
+      if (!wall.type.isWall()) continue;
 
       wall.type.drawOn(wall.elem, wall);
     }
@@ -1508,237 +1532,237 @@ $(function() {
   restoreFromPngAndJson(savedPng, savedJson, undefined, undefined, true);
   
   var quadrantCoords = {
-    "1.310": [10.5, 7.5],
-    "1.410": [11, 7.5],
-    "1.110": [11, 8],
-    "1.210": [10.5, 8],
-    "1.310d": [0.5, 3.5],
-    "1.410d": [1, 3.5],
-    "1.210d": [0.5, 4],
-    "1.321": [4.5, 9.5],
-    "1.421": [5, 9.5],
-    "1.121": [5, 10],
-    "1.221": [4.5, 10],
-    "1.321d": [1.5, 2.5],
-    "1.421d": [2, 2.5],
-    "1.221d": [1.5, 3],
-    "1.332": [6.5, 9.5],
-    "1.432": [7, 9.5],
-    "1.132": [7, 10],
-    "1.232": [6.5, 10],
-    "1.332d": [9.5, 2.5],
-    "1.432d": [10, 2.5],
-    "1.132d": [10, 3],
-    "1.343": [0.5, 7.5],
-    "1.443": [1, 7.5],
-    "1.143": [1, 8],
-    "1.243": [0.5, 8],
-    "1.343d": [10.5, 3.5],
-    "1.443d": [11, 3.5],
-    "1.143d": [11, 4],
-    "1.354": [1.5, 6.5],
-    "1.454": [2, 6.5],
-    "1.154": [2, 7],
-    "1.254": [1.5, 7],
-    "1.454d": [9, 1.5],
-    "1.154d": [9, 2],
-    "1.254d": [8.5, 2],
-    "1.365": [6.5, 8.5],
-    "1.465": [7, 8.5],
-    "1.165": [7, 9],
-    "1.265": [6.5, 9],
-    "1.465d": [11, 1.5],
-    "1.165d": [11, 2],
-    "1.265d": [10.5, 2],
-    "1.376": [4.5, 8.5],
-    "1.476": [5, 8.5],
-    "1.176": [5, 9],
-    "1.276": [4.5, 9],
-    "1.376d": [0.5, 1.5],
-    "1.176d": [1, 2],
-    "1.276d": [0.5, 2],
-    "1.307": [9.5, 6.5],
-    "1.407": [10, 6.5],
-    "1.107": [10, 7],
-    "1.207": [9.5, 7],
-    "1.307d": [2.5, 1.5],
-    "1.107d": [3, 2],
-    "1.207d": [2.5, 2],
-    "1.320": [1.5, 7.5],
-    "1.420": [2, 7.5],
-    "1.220": [1.5, 8],
-    "1.320d": [10.5, 0.5],
-    "1.420d": [11, 0.5],
-    "1.220d": [10.5, 1],
-    "1.331": [5.5, 6.5],
-    "1.431": [6, 6.5],
-    "1.131": [6, 7],
-    "1.231": [5.5, 7],
-    "1.331d": [5.5, 0.5],
-    "1.431d": [6, 0.5],
-    "1.342": [9.5, 7.5],
-    "1.442": [10, 7.5],
-    "1.142": [10, 8],
-    "1.342d": [0.5, 0.5],
-    "1.442d": [1, 0.5],
-    "1.142d": [1, 1],
-    "1.353": [4.5, 5.5],
-    "1.453": [5, 5.5],
-    "1.153": [5, 6],
-    "1.253": [4.5, 6],
-    "1.453d": [7, 1.5],
-    "1.153d": [7, 2],
-    "1.464": [4, 9.5],
-    "1.164": [4, 10],
-    "1.264": [3.5, 10],
-    "1.464d": [2, 3.5],
-    "1.164d": [2, 4],
-    "1.264d": [1.5, 4],
-    "1.375": [5.5, 2.5],
-    "1.475": [6, 2.5],
-    "1.175": [6, 4],
-    "1.275": [5.5, 4],
-    "1.175d": [6, 3],
-    "1.275d": [5.5, 3],
-    "1.306": [7.5, 9.5],
-    "1.106": [8, 10],
-    "1.206": [7.5, 10],
-    "1.306d": [9.5, 3.5],
-    "1.106d": [10, 4],
-    "1.206d": [9.5, 4],
-    "1.317": [6.5, 5.5],
-    "1.417": [7, 5.5],
-    "1.117": [7, 6],
-    "1.217": [6.5, 6],
-    "1.317d": [4.5, 1.5],
-    "1.217d": [4.5, 2],
-    "1.327": [7.5, 8.5],
-    "1.427": [8, 8.5],
-    "1.101": [4, 5],
-    "1.227": [7.5, 9],
-    "1.327d": [8.5, 3.5],
-    "1.227d": [8.5, 4],
-    "1.330": [8.5, 7.5],
-    "1.430": [9, 7.5],
-    "1.112": [2, 0],
-    "1.230": [8.5, 8],
-    "1.330d": [3.5, 0.5],
-    "1.430d": [4, 0.5],
-    "1.341": [2.5, 7.5],
-    "1.441": [3, 7.5],
-    "1.141": [3, 8],
-    "1.223": [9.5, 0],
-    "1.341d": [7.5, 0.5],
-    "1.441d": [8, 0.5],
-    "1.352": [3.5, 8.5],
-    "1.452": [4, 8.5],
-    "1.152": [4, 9],
-    "1.234": [7.5, 5],
-    "1.452d": [3, 3.5],
-    "1.152d": [3, 4],
-    "1.345": [7.5, 6.5],
-    "1.463": [10, 8.5],
-    "1.163": [10, 9],
-    "1.263": [9.5, 9],
-    "1.463d": [2, 0.5],
-    "1.163d": [2, 1],
-    "1.356": [6.5, 7.5],
-    "1.474": [9, 9.5],
-    "1.174": [9, 10],
-    "1.274": [8.5, 10],
-    "1.174d": [10, 5],
-    "1.274d": [9.5, 5],
-    "1.305": [2.5, 9.5],
-    "1.467": [5, 7.5],
-    "1.105": [3, 10],
-    "1.205": [2.5, 10],
-    "1.105d": [2, 5],
-    "1.205d": [1.5, 5],
-    "1.316": [1.5, 8.5],
-    "1.470": [4, 6.5],
-    "1.116": [2, 9],
-    "1.216": [1.5, 9],
-    "1.316d": [9.5, 0.5],
-    "1.216d": [9.5, 1],
-    "1.337": [10.5, 9.5],
-    "1.437": [11, 9.5],
-    "1.102": [0, 7],
-    "1.237": [10.5, 10],
-    "1.337d": [10.5, 4.5],
-    "1.102d": [0, 0],
-    "1.340": [8.5, 10.5],
-    "1.440": [9, 10.5],
-    "1.113": [6, 8],
-    "1.213": [5.5, 8],
-    "1.340d": [3.5, 2.5],
-    "1.440d": [8, 2.5],
-    "1.351": [0.5, 9.5],
-    "1.451": [1, 9.5],
-    "1.151": [1, 10],
-    "1.224": [11.5, 7],
-    "1.224d": [11.5, 0],
-    "1.451d": [1, 4.5],
-    "1.335": [11.5, 8.5],
-    "1.462": [0, 5.5],
-    "1.162": [0, 5],
-    "1.235": [11.5, 9],
-    "1.462d": [0, 4.5],
-    "1.162d": [0, 6],
-    "1.346": [11.5, 7.5],
-    "1.473": [8, 6.5],
-    "1.173": [8, 7],
-    "1.273": [7.5, 7],
-    "1.346d": [2.5, 4.5],
-    "1.173d": [9, 3],
-    "1.357": [5.5, 10.5],
-    "1.457": [6, 10.5],
-    "1.104": [6, 5],
-    "1.204": [5.5, 5],
-    "1.104d": [7, 5],
-    "1.204d": [4.5, 5],
-    "1.315": [3.5, 6.5],
-    "1.460": [0, 7.5],
-    "1.115": [4, 7],
-    "1.215": [3.5, 7],
-    "1.460d": [9, 4.5],
-    "1.215d": [2.5, 3],
-    "1.326": [11.5, 5.5],
-    "1.471": [0, 8.5],
-    "1.171": [0, 9],
-    "1.226": [11.5, 5],
-    "1.326d": [11.5, 4.5],
-    "1.226d": [11.5, 6],
-    "1.347": [9.5, 10.5],
-    "1.447": [10, 10.5],
-    "1.103": [9, 6],
-    "1.203": [8.5, 6],
-    "1.347d": [3.5, 1.5],
-    "1.103d": [4, 1],
-    "1.350": [1.5, 10.5],
-    "1.450": [2, 10.5],
-    "1.114": [3, 6],
-    "1.214": [2.5, 6],
-    "1.214d": [7.5, 1],
-    "1.450d": [8, 1.5],
-    "1.325": [4.5, 7.5],
-    "1.461": [4, 3.5],
-    "1.161": [4, 4],
-    "1.225": [4.5, 8],
-    "1.225d": [8.5, 5],
-    "1.461d": [8, 4.5],
-    "1.336": [7.5, 3.5],
-    "1.472": [7, 7.5],
-    "1.172": [7, 8],
-    "1.236": [7.5, 4],
-    "1.336d": [3.5, 4.5],
-    "1.172d": [3, 5],
-    "1.300": [5.5, 5.5],
-    "1.400": [6, 5.5],
-    "1.100": [6, 6],
-    "1.200": [5.5, 6],
-    "1.300d": [5.5, 8.5],
-    "1.400d": [6, 8.5],
-    "1.100d": [6, 10],
-    "1.200d": [5.5, 10]
+    "132": [10.5, 7.5],
+    "232": [11, 7.5],
+    "332": [11, 8],
+    "032": [10.5, 8],
+    "132d": [0.5, 3.5],
+    "232d": [1, 3.5],
+    "032d": [0.5, 4],
+    "143": [4.5, 9.5],
+    "243": [5, 9.5],
+    "343": [5, 10],
+    "043": [4.5, 10],
+    "143d": [1.5, 2.5],
+    "243d": [2, 2.5],
+    "043d": [1.5, 3],
+    "154": [6.5, 9.5],
+    "254": [7, 9.5],
+    "354": [7, 10],
+    "054": [6.5, 10],
+    "154d": [9.5, 2.5],
+    "254d": [10, 2.5],
+    "354d": [10, 3],
+    "165": [0.5, 7.5],
+    "265": [1, 7.5],
+    "365": [1, 8],
+    "065": [0.5, 8],
+    "165d": [10.5, 3.5],
+    "265d": [11, 3.5],
+    "365d": [11, 4],
+    "176": [1.5, 6.5],
+    "276": [2, 6.5],
+    "376": [2, 7],
+    "076": [1.5, 7],
+    "276d": [9, 1.5],
+    "376d": [9, 2],
+    "076d": [8.5, 2],
+    "107": [6.5, 8.5],
+    "207": [7, 8.5],
+    "307": [7, 9],
+    "007": [6.5, 9],
+    "207d": [11, 1.5],
+    "307d": [11, 2],
+    "007d": [10.5, 2],
+    "110": [4.5, 8.5],
+    "210": [5, 8.5],
+    "310": [5, 9],
+    "010": [4.5, 9],
+    "110d": [0.5, 1.5],
+    "310d": [1, 2],
+    "010d": [0.5, 2],
+    "121": [9.5, 6.5],
+    "221": [10, 6.5],
+    "321": [10, 7],
+    "021": [9.5, 7],
+    "121d": [2.5, 1.5],
+    "321d": [3, 2],
+    "021d": [2.5, 2],
+    "142": [1.5, 7.5],
+    "242": [2, 7.5],
+    "042": [1.5, 8],
+    "142d": [10.5, 0.5],
+    "242d": [11, 0.5],
+    "042d": [10.5, 1],
+    "153": [5.5, 6.5],
+    "253": [6, 6.5],
+    "353": [6, 7],
+    "053": [5.5, 7],
+    "153d": [5.5, 0.5],
+    "253d": [6, 0.5],
+    "164": [9.5, 7.5],
+    "264": [10, 7.5],
+    "364": [10, 8],
+    "164d": [0.5, 0.5],
+    "264d": [1, 0.5],
+    "364d": [1, 1],
+    "175": [4.5, 5.5],
+    "275": [5, 5.5],
+    "375": [5, 6],
+    "075": [4.5, 6],
+    "275d": [7, 1.5],
+    "375d": [7, 2],
+    "206": [4, 9.5],
+    "306": [4, 10],
+    "006": [3.5, 10],
+    "206d": [2, 3.5],
+    "306d": [2, 4],
+    "006d": [1.5, 4],
+    "117": [5.5, 2.5],
+    "217": [6, 2.5],
+    "317": [6, 4],
+    "017": [5.5, 4],
+    "317d": [6, 3],
+    "017d": [5.5, 3],
+    "120": [7.5, 9.5],
+    "320": [8, 10],
+    "020": [7.5, 10],
+    "120d": [9.5, 3.5],
+    "320d": [10, 4],
+    "020d": [9.5, 4],
+    "131": [6.5, 5.5],
+    "231": [7, 5.5],
+    "331": [7, 6],
+    "031": [6.5, 6],
+    "131d": [4.5, 1.5],
+    "031d": [4.5, 2],
+    "141": [7.5, 8.5],
+    "241": [8, 8.5],
+    "323": [4, 5],
+    "041": [7.5, 9],
+    "141d": [8.5, 3.5],
+    "041d": [8.5, 4],
+    "152": [8.5, 7.5],
+    "252": [9, 7.5],
+    "334": [2, 0],
+    "052": [8.5, 8],
+    "152d": [3.5, 0.5],
+    "252d": [4, 0.5],
+    "163": [2.5, 7.5],
+    "263": [3, 7.5],
+    "363": [3, 8],
+    "045": [9.5, 0],
+    "163d": [7.5, 0.5],
+    "263d": [8, 0.5],
+    "174": [3.5, 8.5],
+    "274": [4, 8.5],
+    "374": [4, 9],
+    "056": [7.5, 5],
+    "274d": [3, 3.5],
+    "374d": [3, 4],
+    "167": [7.5, 6.5],
+    "205": [10, 8.5],
+    "305": [10, 9],
+    "005": [9.5, 9],
+    "205d": [2, 0.5],
+    "305d": [2, 1],
+    "170": [6.5, 7.5],
+    "216": [9, 9.5],
+    "316": [9, 10],
+    "016": [8.5, 10],
+    "316d": [10, 5],
+    "016d": [9.5, 5],
+    "127": [2.5, 9.5],
+    "201": [5, 7.5],
+    "327": [3, 10],
+    "027": [2.5, 10],
+    "327d": [2, 5],
+    "027d": [1.5, 5],
+    "130": [1.5, 8.5],
+    "212": [4, 6.5],
+    "330": [2, 9],
+    "030": [1.5, 9],
+    "130d": [9.5, 0.5],
+    "030d": [9.5, 1],
+    "151": [10.5, 9.5],
+    "251": [11, 9.5],
+    "324": [0, 7],
+    "051": [10.5, 10],
+    "151d": [10.5, 4.5],
+    "324d": [0, 0],
+    "162": [8.5, 10.5],
+    "262": [9, 10.5],
+    "335": [6, 8],
+    "035": [5.5, 8],
+    "162d": [3.5, 2.5],
+    "262d": [8, 2.5],
+    "173": [0.5, 9.5],
+    "273": [1, 9.5],
+    "373": [1, 10],
+    "046": [11.5, 7],
+    "046d": [11.5, 0],
+    "273d": [1, 4.5],
+    "157": [11.5, 8.5],
+    "204": [0, 5.5],
+    "304": [0, 5],
+    "057": [11.5, 9],
+    "204d": [0, 4.5],
+    "304d": [0, 6],
+    "160": [11.5, 7.5],
+    "215": [8, 6.5],
+    "315": [8, 7],
+    "015": [7.5, 7],
+    "160d": [2.5, 4.5],
+    "315d": [9, 3],
+    "171": [5.5, 10.5],
+    "271": [6, 10.5],
+    "326": [6, 5],
+    "026": [5.5, 5],
+    "326d": [7, 5],
+    "026d": [4.5, 5],
+    "137": [3.5, 6.5],
+    "202": [0, 7.5],
+    "337": [4, 7],
+    "037": [3.5, 7],
+    "202d": [9, 4.5],
+    "037d": [2.5, 3],
+    "140": [11.5, 5.5],
+    "213": [0, 8.5],
+    "313": [0, 9],
+    "040": [11.5, 5],
+    "140d": [11.5, 4.5],
+    "040d": [11.5, 6],
+    "161": [9.5, 10.5],
+    "261": [10, 10.5],
+    "325": [9, 6],
+    "025": [8.5, 6],
+    "161d": [3.5, 1.5],
+    "325d": [4, 1],
+    "172": [1.5, 10.5],
+    "272": [2, 10.5],
+    "336": [3, 6],
+    "036": [2.5, 6],
+    "036d": [7.5, 1],
+    "272d": [8, 1.5],
+    "147": [4.5, 7.5],
+    "203": [4, 3.5],
+    "303": [4, 4],
+    "047": [4.5, 8],
+    "047d": [8.5, 5],
+    "203d": [8, 4.5],
+    "150": [7.5, 3.5],
+    "214": [7, 7.5],
+    "314": [7, 8],
+    "050": [7.5, 4],
+    "150d": [3.5, 4.5],
+    "314d": [3, 5],
+    "100": [5.5, 5.5],
+    "200": [6, 5.5],
+    "300": [6, 6],
+    "000": [5.5, 6],
+    "100d": [5.5, 8.5],
+    "200d": [6, 8.5],
+    "300d": [6, 10],
+    "000d": [5.5, 10]
   };
 });
