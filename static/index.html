@@ -6,10 +6,12 @@
 		<script src="generatepng.js"></script>
 		<script src="webtoolkit.base64.js"></script>
 		<script src="jquery-2.1.0.min.js"></script>
+		<script src="jquery-ui-1.10.4.custom.min.js"></script>
     <script src="bootstrap.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/ui-lightness/jquery-ui-1.10.4.custom.min.css">
 </head>
 
 <body>
@@ -161,7 +163,36 @@
       </div>
     </div>
   </div>
-
+  
+  <div id="resizeDialog" title="Resize" style='display:none'>
+    <table>
+      <tr>
+        <td></td>
+        <td style='text-align:center'>
+          <input type='checkbox' id='resizeAnchorTop'/>
+        </td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><input type='checkbox' id='resizeAnchorLeft'/></td>
+        <td style='text-align:center'>
+          
+        </td>
+        <td><input type='checkbox' id='resizeAnchorRight'/></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td style='text-align:center'>
+          <input type='checkbox' id='resizeAnchorBottom'/>
+        </td>
+        <td></td>
+      </tr>
+    </table>
+    <div>
+      Width: <input type='text' id='resizeWidthTo' style='width:4em' /> Height: <input type='text' id='resizeHeightTo' style='width:4em' />
+    </div>
+  </div>
+  
   <script type="text/javascript" src="map.js"></script>
 
 </body></html>

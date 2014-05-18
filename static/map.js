@@ -581,7 +581,7 @@ $(function() {
       if (backingStates) {
         for (var x=0; x<backingStates.length; x++) {
           for (var y=0; y<backingStates[0].length; y++) {
-            if (x>= tiles.length || y>=tiles[0].length) {
+            if (x>= tiles.length || y>=tiles[0].length || !backingStates[x][y].equals(new TileState(tiles[x][y]))) {
               changes.push(backingStates[x][y]);
             }
           }
@@ -615,6 +615,7 @@ $(function() {
   function savePoint() {
     var step = recordStep();
     if (step) {
+      console.log('recording step', step);
       undoSteps.push(step);
       redoSteps = [];
       enableUndoRedoButtons();
@@ -1341,7 +1342,11 @@ $(function() {
 
     return false;
   };
-  function restoreFromPngAndJson(pngBase64, jsonString, optWidth, optHeight, doHistoryClear) {
+  function restoreFromPngAndJson(pngBase64, jsonString, optResizeParams, doHistoryClear) {
+    var optWidth = optResizeParams && optResizeParams.width;
+    var optHeight = optResizeParams && optResizeParams.height;
+    var deltaX = (optResizeParams && optResizeParams.deltaX) || 0;
+    var deltaY = (optResizeParams && optResizeParams.deltaY) || 0;
     var canvas = document.getElementById('importCanvas');
     var ctx = canvas.getContext('2d');
     var json = JSON.parse(jsonString);
@@ -1362,17 +1367,20 @@ $(function() {
 
       var fields = json.fields || {};
       var cols = [];
-      for (var x=0; x<optWidth; x++) {
+      for (var destX=0; destX<optWidth; destX++) {
+        var sourceX = destX - deltaX;
         var col = [];
-        for (var y=0; y<optHeight; y++) {
+        for (var destY=0; destY<optHeight; destY++) {
+          var sourceY = destY - deltaY;
           var type;
-          if (x<w && y<h) {
-            var i = (y*w + x)*4;
+          console.log('sourceX=', sourceX,'sourceY=', sourceY)
+          if (sourceX<w && sourceY<h && sourceX>=0 && sourceY>=0) {
+            var i = (sourceY*w + sourceX)*4;
             var pixel = imgd[i] | (imgd[i+1]<<8) | (imgd[i+2]<<16);
             type = typeByColor[pixel] || emptyType;
             if (type == onFieldType || type==offFieldType || type==redFieldType || type==blueFieldType) {
               type = {on: onFieldType, off: offFieldType, red: redFieldType, blue: blueFieldType
-              }[(fields[x+','+y]||{}).defaultState] || offFieldType;
+              }[(fields[sourceX+','+sourceY]||{}).defaultState] || offFieldType;
             }
           } else {
             type = emptyType;
@@ -1427,36 +1435,71 @@ $(function() {
     if (importPng && importJson) {
       restoreFromPngAndJson(
         importPng,
-        importJson, undefined, undefined, true);
+        importJson, undefined, true);
     } else {
       alert('Please drag and drop a PNG and a JSON to import onto their receptacles.')
     }
   });
 
-  function resizeTo(width, height) {
+  function resizeTo(width, height, deltaX, deltaY) {
     var png = getPngBase64Url();
     var json = JSON.stringify(makeLogic());
 
-    restoreFromPngAndJson(png, json, width, height);
+    restoreFromPngAndJson(png, json, {width: width, height: height, deltaX: deltaX, deltaY: deltaY});
   }
 
+  var $resizeWidthTo = $('#resizeWidthTo');
+  var $resizeHeightTo = $('#resizeHeightTo');
+  var $resizeAnchorLeft = $('#resizeAnchorLeft');
+  var $resizeAnchorRight = $('#resizeAnchorRight');
+  var $resizeAnchorTop = $('#resizeAnchorTop');
+  var $resizeAnchorBottom = $('#resizeAnchorBottom');
+  
   $('#resize').click(function(e) {
-    var width = parseInt($('#resizeWidth').val(), 10);
-    var height = parseInt($('#resizeHeight').val(), 10);
-
-    if (width * height > 3600) {
-      if (!confirm('It\'s currently not possible to test maps larger than 3600 tiles.\nVery large maps can (will) lag your browser as well.\nAre you sure you want to resize?')) {
-        $('#resizeWidth').val(tiles.length);
-        $('#resizeHeight').val(tiles[0].length);
-        e.preventDefault();
-        return;
+    $resizeWidthTo.val(tiles.length);
+    $resizeHeightTo.val(tiles[0].length);
+    
+    $( "#resizeDialog" ).dialog({
+      height: 300,
+      modal: true,
+      buttons: {
+        "Resize": function() {
+          var oldWidth = tiles.length;
+          var oldHeight = tiles[0].length;
+          
+          var width = parseInt($resizeWidthTo.val(),10);
+          var height = parseInt($resizeHeightTo.val(),10);
+          
+          function getDelta(oldSize, newSize, anchorMin, anchorMax) {
+            if (anchorMin < anchorMax) {
+              return 0;
+            } else if (anchorMin > anchorMax) {
+              return newSize-oldSize;
+            } else {
+              return Math.round((newSize-oldSize)/2);
+            }
+          }
+          var deltaX = getDelta(oldWidth, width, $resizeAnchorLeft.is(":checked"), $resizeAnchorRight.is(":checked"))
+          var deltaY = getDelta(oldHeight, height, $resizeAnchorTop.is(":checked"), $resizeAnchorBottom.is(":checked"))
+          if (width * height > 3600) {
+            if (!confirm('It\'s currently not possible to test maps larger than 3600 tiles.\nVery large maps can (will) lag your browser as well.\nAre you sure you want to resize?')) {
+              $('#resizeWidth').val(tiles.length);
+              $('#resizeHeight').val(tiles[0].length);
+              e.preventDefault();
+              return;
+            }
+          } else if ( width < 1 || height < 1) {
+            alert('Min width/height is 1.');
+            width = Math.max(1, width);
+            height = Math.max(1, height);
+          }
+          resizeTo(width, height, deltaX,deltaY);
+          console.log('resizing to',width,height)
+          $( this ).dialog( "close" );
+        }
       }
-    } else if ( width < 1 || height < 1) {
-      alert('Min width/height is 1.');
-      width = Math.max(1, width);
-      height = Math.max(1, height);
-    }
-    resizeTo(width, height);
+    });
+    
     e.preventDefault();
   });
   
@@ -1532,7 +1575,7 @@ $(function() {
   
   var savedPng = localStorage.getItem('png')
   var savedJson = localStorage.getItem('json')
-  restoreFromPngAndJson(savedPng, savedJson, undefined, undefined, true);
+  restoreFromPngAndJson(savedPng, savedJson, undefined, true);
   
   var quadrantCoords = {
     "132": [10.5, 7.5],
