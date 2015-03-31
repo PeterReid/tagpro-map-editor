@@ -19,6 +19,8 @@ $(function() {
     this.postPlaceFn = extra&&extra.postPlaceFn;
     this.logicFn = extra&&extra.logicFn;
     this.image = extra&&extra.image;
+    this.imageTileWidth = extra&&extra.imageTileWidth||5;
+    this.imageTileHeight = extra&&extra.imageTileHeight||1;
     this.wallSolids = (extra&&extra.wallSolids)|0;
     this.rgb = r | (g<<8) | (b<<16);
     this.opposite = this; // What it switches to when mirrored
@@ -35,7 +37,7 @@ $(function() {
   TileType.prototype.drawOn = function($elem, tile) {
     var styleBgColor = '';
     var styleUrl = 'url("' + (this.image || 'default-skin-v2') + '.png")';
-    var styleBackgroundSize = this.image ? (5*tileSize+'px ' + tileSize + 'px') : (tileSheetWidth*tileSize + 'px ' + tileSheetHeight*tileSize + 'px');
+    var styleBackgroundSize = this.image ? (this.imageTileWidth*tileSize+'px ' + this.imageTileHeight*tileSize + 'px') : (tileSheetWidth*tileSize + 'px ' + tileSheetHeight*tileSize + 'px');
     if (this.name == 'empty') {
       styleBgColor = 'black';
       styleUrl = '';
@@ -751,8 +753,10 @@ $(function() {
     blueSpawnType = new TileType('blueSpawn', 15,0, 0,0,155, "Blue Spawn Tile - Blue balls will spawn within a certain radius of this tile."),
     yellowFlagType = new TileType('yellowFlag', 13,1, 128,128,0, "Yellow Flag - Bring this neutral flag to your zone to score."),
     redEndzoneType = new TileType('redEndzone', 14,5, 185,0,0, "Red Endzone - Bring a neutral (yellow) flag to this zone to score."),
-    blueEndzoneType = new TileType('blueEndzone', 15,5, 25,0,148, "Blue Endzone - Bring a neutral (yellow) flag to this zone to score.")
-  ]
+    blueEndzoneType = new TileType('blueEndzone', 15,5, 25,0,148, "Blue Endzone - Bring a neutral (yellow) flag to this zone to score."),
+    gravityWellType = new TileType('gravityWell', 0, 0, 32, 32, 32, "Gravity Well - Pulls nearby balls to their splat.", {image: 'gravitywell', imageTileWidth: 1, imageTileHeight: 1})
+  ];
+
   function areOpposites(t1, t2) {
     t1.opposite = t2;
     t2.opposite = t1; 
@@ -1242,7 +1246,7 @@ $(function() {
 
   var paletteRows = [
     [wallType, wallTopLeftType, wallTopRightType, wallBottomLeftType, wallBottomRightType, floorType, emptyType], 
-    [spikeType, powerupType, portalType],
+    [spikeType, powerupType, portalType, gravityWellType],
     [redFlagType, blueFlagType, redSpawnType, blueSpawnType, redEndzoneType, blueEndzoneType, yellowFlagType, ],
     [speedpadType, redSpeedPadType, blueSpeedpadType, '', '', redFloorType, blueFloorType],
     [switchType, offFieldType, onFieldType, redFieldType, blueFieldType, '', bombType]
