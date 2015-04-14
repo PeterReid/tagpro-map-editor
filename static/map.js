@@ -445,7 +445,7 @@ $(function() {
     }
   })
 
-  var wire = new Tool({
+var wire = new Tool({
     type: 'special',
     unselect: function() {
       clearHighlights();
@@ -467,7 +467,7 @@ $(function() {
       var change = null;
       if (tile.type == portalType) {
         if (this.selectedSwitch && this.selectedSwitch.type == portalType) {
-          change = new TileState(this.selectedSwitch, {destination: tile,})
+          change = new TileState(this.selectedSwitch, {destination: tile})
           console.log('making destination action to', xy(tile));
           this.selectedSwitch = null;
         } else {
@@ -485,13 +485,13 @@ $(function() {
         var hitKey = xy(tile);
         if (affected[hitKey]) delete affected[hitKey];
         else affected[hitKey] = tile;
-        }
         
         change = new TileState(this.selectedSwitch, {affected: affected});
       }
       return new UndoStep(change ? [change] : []);
     }
   });
+
   wire.refreshHighlights = function() {
     clearHighlights();
     if (this.selectedSwitch) {
