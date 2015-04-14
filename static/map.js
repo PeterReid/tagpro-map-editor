@@ -467,7 +467,10 @@ $(function() {
       var change = null;
       if (tile.type == portalType) {
         if (this.selectedSwitch && this.selectedSwitch.type == portalType) {
-          change = new TileState(this.selectedSwitch, {destination: tile})
+//          cooldown_time = 0;
+//          var cooldown_time = prompt("Please enter the cooldown you want on the portal in ms", 0);
+//          change = new TileState(this.selectedSwitch, {cooldown: cooldown_time})
+          change = new TileState(this.selectedSwitch, {destination: tile,})
           console.log('making destination action to', xy(tile));
           this.selectedSwitch = null;
         } else {
@@ -484,7 +487,9 @@ $(function() {
         }
         var hitKey = xy(tile);
         if (affected[hitKey]) delete affected[hitKey];
-        else affected[hitKey] = tile;
+        else {
+            affected[hitKey] = tile;
+        }
         
         change = new TileState(this.selectedSwitch, {affected: affected});
       }
@@ -497,6 +502,7 @@ $(function() {
       this.selectedSwitch.highlight(true);
       if (this.selectedSwitch.type == portalType) {
         if (this.selectedSwitch.destination) {
+//          this.selectedSwitch.cooldown = prompt("cooldown", 0);
           this.selectedSwitch.destination.highlight(true);
         }
       } else if (this.selectedSwitch.type == switchType) {
@@ -715,7 +721,13 @@ $(function() {
   }
   function exportPortal(logic, tile) {
     var dest = tile.destination || tile;
-    logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
+    var coold = tile.cooldown || tile;
+    if (dest.x == tile.x && dest.y == tile.y){
+    logic.portals[tile.x + ',' + tile.y] = {destination: {}};
+    }
+    else{
+    logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}, cooldown : 0};
+    }
   }
 
   var floorType, emptyType, 
@@ -1098,6 +1110,10 @@ $(function() {
         } else {
           var change = selectedTool.speculateUp(x,y);
           if (change) {
+//            alert(change.type);
+//            alert(selectedTool);
+//          if (this.selectedSwitch && this.selectedSwitch.type == portalType) {
+//          change = new TileState(this.selectedSwitch, {affected: affected});
             applySymmetry(change);
             applyStep(change);
             selectedTool.stateChange();
@@ -1154,9 +1170,14 @@ $(function() {
         var cell;
         if (tile.type == portalType) {
           cell = {
-            type: tile.type.name,
-            destination: tile.destination ? [tile.destination.x, tile.destination.y] : [x,y]
+            type: tile.type.name}
+          cell[destination] = [tile.destination.x, tile.destination.y];
+          if (tile.destination.x == x && tile.destination.y == y){
+              cell[destination] = "";
           }
+          cell[cooldown] = 0;
+//            destination: tile.destination ? [tile.destination.x, tile.destination.y] : ["", ""]
+          
         } else if (tile.type == switchType) {
           var targets = [];
           for (var key in tile.affected||[]) {
@@ -1187,13 +1208,13 @@ $(function() {
   $('#export').click(function() {
     $('.dropArea').removeClass('hasImportable');
     $('.dropArea').addClass('hasExportable');
-    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic(), null, 4)));
     $(pngDropArea).attr('href', getPngBase64Url());
   });
 
   $('#save').click(function() {
     localStorage.setItem('png', getPngBase64Url());
-    localStorage.setItem('json', JSON.stringify(makeLogic()));
+    localStorage.setItem('json', JSON.stringify(makeLogic(), null, 4));
   });
 
   function isValidMapStr() {
@@ -1223,7 +1244,7 @@ $(function() {
       return false;
     }
     var eu = e.target.id == 'testeu' ? true : false;
-    $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64(), eu: eu}, function(data) {
+    $.post('test', {logic: JSON.stringify(makeLogic(), null, 4), layout: getPngBase64(), eu: eu}, function(data) {
       if (data && data.location) {
         window.open(data.location);
       } else {
@@ -1312,7 +1333,7 @@ $(function() {
 
   jsonDropArea.addEventListener("dragstart",function(evt){
     evt.dataTransfer.setData("DownloadURL",
-      'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+      'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic(), null, 4)));
     return false;
   },false);
 
@@ -1405,6 +1426,11 @@ $(function() {
         var tile = (tiles[xy[0]]||[])[xy[1]];
         if (tile && tile.type==portalType) {
           var dest = portals[key].destination||{};
+
+          if (dest.x == xy[0] && dest.y == xy[1]){
+              dest.x = "", dest.y == "";
+          }
+
           tile.destination = (tiles[dest.x]||[])[dest.y];
         }
       }
@@ -1447,7 +1473,7 @@ $(function() {
 
   function resizeTo(width, height, deltaX, deltaY) {
     var png = getPngBase64Url();
-    var json = JSON.stringify(makeLogic());
+    var json = JSON.stringify(makeLogic(), null, " ");
 
     restoreFromPngAndJson(png, json, {width: width, height: height, deltaX: deltaX, deltaY: deltaY});
   }
