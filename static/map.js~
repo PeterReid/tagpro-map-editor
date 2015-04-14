@@ -498,6 +498,7 @@ $(function() {
       this.selectedSwitch.highlight(true);
       if (this.selectedSwitch.type == portalType) {
         if (this.selectedSwitch.destination) {
+//          this.selectedSwitch.cooldown = prompt("cooldown", 0);
           this.selectedSwitch.destination.highlight(true);
         }
       } else if (this.selectedSwitch.type == switchType) {
@@ -716,6 +717,7 @@ $(function() {
   }
   function exportPortal(logic, tile) {
     var dest = tile.destination || tile;
+    var coold = tile.cooldown || tile;
     if (dest.x == tile.x && dest.y == tile.y){
     logic.portals[tile.x + ',' + tile.y] = {destination: {}};
     }
@@ -1104,6 +1106,10 @@ $(function() {
         } else {
           var change = selectedTool.speculateUp(x,y);
           if (change) {
+//            alert(change.type);
+//            alert(selectedTool);
+//          if (this.selectedSwitch && this.selectedSwitch.type == portalType) {
+//          change = new TileState(this.selectedSwitch, {affected: affected});
             applySymmetry(change);
             applyStep(change);
             selectedTool.stateChange();
@@ -1165,6 +1171,9 @@ $(function() {
           if (tile.destination.x == x && tile.destination.y == y){
               cell[destination] = "";
           }
+          cell[cooldown] = 0;
+//            destination: tile.destination ? [tile.destination.x, tile.destination.y] : ["", ""]
+          
         } else if (tile.type == switchType) {
           var targets = [];
           for (var key in tile.affected||[]) {
