@@ -445,7 +445,7 @@ $(function() {
     }
   })
 
-  var wire = new Tool({
+var wire = new Tool({
     type: 'special',
     unselect: function() {
       clearHighlights();
@@ -491,6 +491,7 @@ $(function() {
       return new UndoStep(change ? [change] : []);
     }
   });
+
   wire.refreshHighlights = function() {
     clearHighlights();
     if (this.selectedSwitch) {
@@ -715,7 +716,12 @@ $(function() {
   }
   function exportPortal(logic, tile) {
     var dest = tile.destination || tile;
-    logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}};
+    if (dest.x == tile.x && dest.y == tile.y){
+    logic.portals[tile.x + ',' + tile.y] = {destination: {}};
+    }
+    else{
+    logic.portals[tile.x + ',' + tile.y] = {destination: {x: dest.x, y: dest.y}, cooldown : 0};
+    }
   }
 
   var floorType, emptyType, 
@@ -1154,8 +1160,10 @@ $(function() {
         var cell;
         if (tile.type == portalType) {
           cell = {
-            type: tile.type.name,
-            destination: tile.destination ? [tile.destination.x, tile.destination.y] : [x,y]
+            type: tile.type.name}
+          cell[destination] = [tile.destination.x, tile.destination.y];
+          if (tile.destination.x == x && tile.destination.y == y){
+              cell[destination] = "";
           }
         } else if (tile.type == switchType) {
           var targets = [];
@@ -1187,13 +1195,13 @@ $(function() {
   $('#export').click(function() {
     $('.dropArea').removeClass('hasImportable');
     $('.dropArea').addClass('hasExportable');
-    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic(), null, 4)));
     $(pngDropArea).attr('href', getPngBase64Url());
   });
 
   $('#save').click(function() {
     localStorage.setItem('png', getPngBase64Url());
-    localStorage.setItem('json', JSON.stringify(makeLogic()));
+    localStorage.setItem('json', JSON.stringify(makeLogic(), null, 4));
   });
 
   function isValidMapStr() {
@@ -1223,7 +1231,7 @@ $(function() {
       return false;
     }
     var eu = e.target.id == 'testeu' ? true : false;
-    $.post('test', {logic: JSON.stringify(makeLogic()), layout: getPngBase64(), eu: eu}, function(data) {
+    $.post('test', {logic: JSON.stringify(makeLogic(), null, 4), layout: getPngBase64(), eu: eu}, function(data) {
       if (data && data.location) {
         window.open(data.location);
       } else {
@@ -1312,7 +1320,7 @@ $(function() {
 
   jsonDropArea.addEventListener("dragstart",function(evt){
     evt.dataTransfer.setData("DownloadURL",
-      'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+      'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic(), null, 4)));
     return false;
   },false);
 
@@ -1405,6 +1413,11 @@ $(function() {
         var tile = (tiles[xy[0]]||[])[xy[1]];
         if (tile && tile.type==portalType) {
           var dest = portals[key].destination||{};
+
+          if (dest.x == xy[0] && dest.y == xy[1]){
+              dest.x = "", dest.y == "";
+          }
+
           tile.destination = (tiles[dest.x]||[])[dest.y];
         }
       }
@@ -1447,7 +1460,7 @@ $(function() {
 
   function resizeTo(width, height, deltaX, deltaY) {
     var png = getPngBase64Url();
-    var json = JSON.stringify(makeLogic());
+    var json = JSON.stringify(makeLogic(), null, " ");
 
     restoreFromPngAndJson(png, json, {width: width, height: height, deltaX: deltaX, deltaY: deltaY});
   }
