@@ -1187,13 +1187,13 @@ $(function() {
   $('#export').click(function() {
     $('.dropArea').removeClass('hasImportable');
     $('.dropArea').addClass('hasExportable');
-    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+    $(jsonDropArea).attr('href', 'data:application/json;base64,' + Base64.encode(makeLogicString()));
     $(pngDropArea).attr('href', getPngBase64Url());
   });
 
   $('#save').click(function() {
     localStorage.setItem('png', getPngBase64Url());
-    localStorage.setItem('json', JSON.stringify(makeLogic()));
+    localStorage.setItem('json', makeLogicString());
   });
 
   function isValidMapStr() {
@@ -1312,7 +1312,7 @@ $(function() {
 
   jsonDropArea.addEventListener("dragstart",function(evt){
     evt.dataTransfer.setData("DownloadURL",
-      'data:application/json;base64,' + Base64.encode(JSON.stringify(makeLogic())));
+      'data:application/json;base64,' + Base64.encode(makeLogicString()));
     return false;
   },false);
 
@@ -1445,9 +1445,13 @@ $(function() {
     }
   });
 
+  function makeLogicString() {
+    return JSON.stringify(makeLogic(), null, 2);
+  }
+  
   function resizeTo(width, height, deltaX, deltaY) {
     var png = getPngBase64Url();
-    var json = JSON.stringify(makeLogic());
+    var json = makeLogicString();
 
     restoreFromPngAndJson(png, json, {width: width, height: height, deltaX: deltaX, deltaY: deltaY});
   }
